@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHC-PH01 · Inventory System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--s1:#161b22;--s2:#1c2128;--s3:#21262d;
+  --b1:#30363d;--b2:#3d444d;
+  --acc:#4493f8;--acc2:#79c0ff;
+  --grn:#3fb950;--red:#f85149;--yel:#d29922;--pur:#bc8cff;--ora:#e3b341;
+  --txt:#e6edf3;--sub:#8b949e;--dim:#484f58;
+  --ff:'Segoe UI',system-ui,sans-serif;
+  --mo:'Consolas','Courier New',monospace;
+  --r:8px;--r2:5px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--ff);font-size:14px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── TOPBAR ── */
+.top{background:var(--s1);border-bottom:1px solid var(--b1);padding:0 20px;display:flex;align-items:center;height:50px;gap:14px;position:sticky;top:0;z-index:300}
+.tlogo{font-size:20px}
+.ttitle{font-weight:700;font-size:14px;line-height:1.2}
+.tsub{font-size:10px;color:var(--sub);font-family:var(--mo)}
+.tsp{flex:1}
+.tbadge{font-family:var(--mo);font-size:10px;color:var(--sub);padding:3px 10px;background:var(--s2);border:1px solid var(--b1);border-radius:20px}
+
+/* ── NAV ── */
+.nav{background:var(--s2);border-bottom:1px solid var(--b1);display:flex;padding:0 20px;gap:0;overflow-x:auto}
+.ntab{padding:9px 18px;font-size:13px;font-weight:500;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.ntab:hover{color:var(--txt)}
+.ntab.on{color:var(--acc2);border-bottom-color:var(--acc)}
+
+/* ── WRAP ── */
+.wrap{padding:22px 20px;max-width:1440px;margin:0 auto}
+
+/* ── STEPS ── */
+.steps{display:flex;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:6px}
+.sn{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.sn.done{background:var(--grn);color:#0d1117}
+.sn.on{background:var(--acc);color:#fff;box-shadow:0 0 0 4px rgba(68,147,248,.2)}
+.sn.off{background:var(--s3);color:var(--sub);border:1px solid var(--b1)}
+.sl{font-size:12px;font-weight:500;margin-left:6px}
+.sl.done{color:var(--grn)}.sl.on{color:var(--acc2)}.sl.off{color:var(--sub)}
+.sline{flex:1;height:1px;background:var(--b1);margin:0 10px;min-width:20px}
+.sline.done{background:var(--grn)}
+
+/* ── CARD ── */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:20px 22px;margin-bottom:14px}
+.chdr{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;padding-bottom:12px;border-bottom:1px solid var(--b1);margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ── CATS ── */
+.cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
+.ctile{background:var(--s2);border:2px solid var(--b1);border-radius:var(--r);padding:16px 12px;cursor:pointer;transition:all .15s;text-align:center;user-select:none}
+.ctile:hover{border-color:var(--acc);background:rgba(68,147,248,.07);transform:translateY(-1px)}
+.ctile.sel{border-color:var(--acc);background:rgba(68,147,248,.1)}
+.cti{font-size:26px;margin-bottom:7px}
+.ctn{font-size:13px;font-weight:600}
+.ctc{font-family:var(--mo);font-size:10px;color:var(--acc);margin-top:3px}
+.ctx{font-size:10px;color:var(--sub);margin-top:2px}
+
+/* ── FORM ── */
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}
+.full{grid-column:1/-1}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fl{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px}
+.fl .a{background:rgba(63,185,80,.12);color:var(--grn);font-size:9px;padding:1px 5px;border-radius:8px;text-transform:none;letter-spacing:0;font-weight:500}
+.fl .r{color:var(--red)}
+input,select,textarea{background:var(--s2);color:var(--txt);border:1px solid var(--b1);border-radius:var(--r2);padding:8px 11px;font-family:var(--ff);font-size:13px;width:100%;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(68,147,248,.12)}
+input.af{background:rgba(63,185,80,.05);border-color:rgba(63,185,80,.2);color:var(--grn);font-family:var(--mo);font-size:12px}
+select option{background:var(--s2)}
+textarea{resize:vertical;min-height:64px}
+
+/* ── SEARCH ── */
+.sw{position:relative}
+.sw input{padding-left:30px}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none;font-size:13px}
+.ddl{position:absolute;top:calc(100% + 2px);left:0;right:0;background:var(--s1);border:1px solid var(--b2);border-radius:var(--r2);max-height:260px;overflow-y:auto;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.ddi{padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--b1);transition:background .1s}
+.ddi:hover,.ddi.hi{background:rgba(68,147,248,.1)}
+.ddi:last-child{border-bottom:none}
+.did{font-family:var(--mo);font-size:11px;color:var(--acc);font-weight:600}
+.dds{font-size:12px;color:var(--txt);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95%}
+.ddm{font-size:10px;color:var(--sub);margin-top:1px}
+
+/* ── AUTOFILL BOX ── */
+.afz{background:rgba(63,185,80,.04);border:1px solid rgba(63,185,80,.14);border-radius:var(--r2);padding:13px 15px;margin-bottom:14px}
+.afzh{font-size:10px;font-weight:700;color:var(--grn);text-transform:uppercase;letter-spacing:.6px;margin-bottom:11px}
+
+/* ── CHIPS ── */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.chip{background:rgba(68,147,248,.08);border:1px solid rgba(68,147,248,.18);border-radius:5px;padding:4px 9px}
+.chl{font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px}
+.chv{font-family:var(--mo);font-size:11px;color:var(--acc2);font-weight:600;margin-top:1px}
+
+/* ── BTNS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 15px;border-radius:var(--r2);border:none;cursor:pointer;font-family:var(--ff);font-size:13px;font-weight:600;transition:all .15s;white-space:nowrap}
+.bp{background:var(--acc);color:#fff}.bp:hover{background:#357fe0}
+.bs{background:var(--grn);color:#0d1117}.bs:hover{background:#32b944}
+.bg{background:transparent;color:var(--sub);border:1px solid var(--b1)}.bg:hover{background:var(--s2);color:var(--txt)}
+.bd{background:rgba(248,81,73,.1);color:var(--red);border:1px solid rgba(248,81,73,.2)}.bd:hover{background:rgba(248,81,73,.18)}
+.be{background:rgba(63,185,80,.09);color:var(--grn);border:1px solid rgba(63,185,80,.22)}.be:hover{background:rgba(63,185,80,.16)}
+.bpur{background:rgba(188,140,255,.1);color:var(--pur);border:1px solid rgba(188,140,255,.25)}.bpur:hover{background:rgba(188,140,255,.18)}
+.bsm{padding:5px 10px;font-size:12px}
+.brow{display:flex;gap:9px;align-items:center;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--b1);margin-top:14px;flex-wrap:wrap}
+
+/* ── REVIEW ── */
+.rvt{width:100%;border-collapse:collapse;font-size:13px}
+.rvt td{padding:7px 11px;border-bottom:1px solid var(--b1)}
+.rvt tr:last-child td{border-bottom:none}
+.rvl{color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;width:175px;white-space:nowrap}
+
+/* ── SHEET TABS ── */
+.stabs{display:flex;gap:0;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);width:fit-content;padding:3px;margin-bottom:14px;flex-wrap:wrap}
+.stab{padding:6px 16px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;color:var(--sub);transition:all .15s}
+.stab.on{background:var(--acc);color:#fff}
+
+/* ── SHEET TABLE ── */
+.shwrap{overflow-x:auto;border:1px solid var(--b1);border-radius:var(--r)}
+.sht{width:100%;border-collapse:collapse;font-size:11.5px}
+.sht th{background:var(--s2);color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.35px;padding:8px 9px;border-bottom:2px solid var(--b1);border-right:1px solid var(--b1);white-space:nowrap;position:sticky;top:0;z-index:5;cursor:pointer;user-select:none}
+.sht th:hover{color:var(--txt)}.sht th.sa::after{content:" ↑"}.sht th.sd::after{content:" ↓"}
+.sht td{padding:0;border-bottom:1px solid var(--b1);border-right:1px solid var(--b1);vertical-align:middle}
+.sht tr:hover td{background:rgba(68,147,248,.03)}
+.cv{padding:6px 9px;min-height:30px;display:flex;align-items:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}
+.ci{width:100%;background:transparent;color:var(--txt);border:none;font-family:var(--ff);font-size:11.5px;padding:6px 9px;outline:none}
+.ci:focus{background:rgba(68,147,248,.07)}
+.rn{background:var(--s2);color:var(--dim);font-family:var(--mo);font-size:10px;padding:6px 7px;text-align:center;border-right:2px solid var(--b1);position:sticky;left:0;z-index:2;min-width:32px}
+td.ac{background:rgba(63,185,80,.04)}
+td.ac .cv{color:var(--grn);font-family:var(--mo);font-size:11px}
+td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
+.ra{display:flex;gap:2px;padding:2px 5px}
+.ib{background:none;border:none;cursor:pointer;color:var(--sub);font-size:12px;padding:3px 5px;border-radius:3px;transition:all .1s}
+.ib:hover{color:var(--red);background:rgba(248,81,73,.1)}
+.ib.cp:hover{color:var(--acc);background:rgba(68,147,248,.1)}
+.ib.ce:hover{color:var(--grn);background:rgba(63,185,80,.1)}
+
+/* ── MISC ── */
+.sa{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.sf{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cb{background:var(--s2);color:var(--sub);font-size:10px;padding:3px 9px;border-radius:12px;font-family:var(--mo);border:1px solid var(--b1)}
+.empty{text-align:center;padding:50px;color:var(--sub)}
+.ei{font-size:38px;margin-bottom:10px}
+.toast{position:fixed;bottom:18px;right:18px;padding:10px 16px;border-radius:var(--r2);font-weight:600;font-size:13px;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:tin .2s ease;pointer-events:none}
+@keyframes tin{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pg{display:none}.pg.on{display:block}
+.sectlabel{font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:11px;padding-bottom:8px;border-bottom:1px solid var(--b1)}
+
+/* ── MRS SPECIFIC ── */
+.mrs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.mrs-slip{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.mrs-slip:hover{border-color:var(--acc);cursor:pointer}
+.mrs-slip.sel{border-color:var(--acc);background:rgba(68,147,248,.06)}
+.mrs-header-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.mrs-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+.mrs-table th{background:rgba(68,147,248,.08);color:var(--acc2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:7px 10px;border:1px solid var(--b1);text-align:left}
+.mrs-table td{padding:6px 10px;border:1px solid var(--b1);vertical-align:middle}
+.mrs-table td input{background:transparent;border:none;color:var(--txt);font-size:12px;width:100%;padding:2px;outline:none}
+.mrs-table td input:focus{background:rgba(68,147,248,.08);border-radius:3px}
+.mrs-table tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.mrs-sno{color:var(--dim);font-family:var(--mo);font-size:10px;text-align:center;width:30px}
+.mrs-preview{background:#fff;color:#000;border-radius:var(--r);padding:28px 32px;font-family:'Arial',sans-serif;font-size:11px;max-width:800px;margin:0 auto;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.mrs-preview table{width:100%;border-collapse:collapse}
+.mrs-preview td,
+.mrs-preview th{border:1px solid #000;padding:4px 8px;font-size:10px}
+.mrs-preview .title-row td{text-align:center;font-weight:700;font-size:13px;background:#1c3a6b;color:#fff}
+.mrs-preview .hdr-row td{background:#e8e8e8;font-weight:700;font-size:10px;text-align:center}
+.mrs-preview .sig-row td{border:none;padding-top:8px;font-size:9px;vertical-align:top}
+.mrs-info{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mrs-info-item{background:var(--s3);border-radius:4px;padding:8px 12px}
+.mrs-info-label{font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.mrs-info-val{font-size:12px;font-weight:600;color:var(--txt)}
+.mrs-list{display:flex;flex-direction:column;gap:8px}
+.mrs-list-item{background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
+.mrs-list-item:hover{border-color:var(--acc);background:rgba(68,147,248,.05)}
+.mrs-list-no{font-family:var(--mo);font-size:12px;color:var(--acc);font-weight:700;min-width:60px}
+.mrs-list-meta{flex:1}
+.mrs-list-date{font-size:10px;color:var(--sub)}
+.mrs-list-loc{font-size:12px;font-weight:600}
+.mrs-list-items{font-size:11px;color:var(--sub);margin-top:2px}
+.mrs-badge{font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;background:rgba(63,185,80,.12);color:var(--grn)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px}
+.stat-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px}
+.stat-label{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-size:24px;font-weight:700;color:var(--txt)}
+.stat-sub{font-size:10px;color:var(--sub);margin-top:3px}
+.stat-card.grn .stat-val{color:var(--grn)}
+.stat-card.acc .stat-val{color:var(--acc2)}
+.stat-card.pur .stat-val{color:var(--pur)}
+.stat-card.ora .stat-val{color:var(--ora)}
+
+@media(max-width:768px){
+  .fg2,.fg3,.mrs-grid,.mrs-header-row{grid-template-columns:1fr}
+  .full{grid-column:1}
+  .wrap{padding:14px 12px}
+  .cgrid{grid-template-columns:repeat(2,1fr)}
+  .top .tsub,.top .tbadge{display:none}
+  .mrs-info{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="top">
+  <div class="tlogo">🏗</div>
+  <div>
+    <div class="ttitle">SHC-PH01 · Material Inventory System</div>
+    <div class="tsub">ABCON / BOGEST · Warehouse: SHC01 · Account: 501102</div>
+  </div>
+  <div class="tsp"></div>
+  <span class="tbadge" id="topStat">Loading…</span>
+  <button class="btn be bsm" onclick="exportSheet()">⬇ Export Excel</button>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="ntab on"  id="tab-form"   onclick="gotoTab('form')">➕ Add Entry</div>
+  <div class="ntab"     id="tab-sheet"  onclick="gotoTab('sheet')">📊 View Sheet</div>
+  <div class="ntab"     id="tab-mrs"    onclick="gotoTab('mrs')">📋 MRS — Requisition Slips</div>
+  <div class="ntab"     id="tab-dash"   onclick="gotoTab('dash')">📈 Dashboard</div>
+</div>
+
+<!-- ═══════════════════════════ FORM PAGE ═══════════════════════════ -->
+<div class="pg on" id="pg-form">
+<div class="wrap">
+
+  <!-- STEP BAR -->
+  <div class="steps" id="stepBar">
+    <div class="sn on" id="sn1">1</div>
+    <div class="sl on" id="sl1">Select Category</div>
+    <div class="sline" id="ln1"></div>
+    <div class="sn off" id="sn2">2</div>
+    <div class="sl off" id="sl2">Fill Details</div>
+    <div class="sline" id="ln2"></div>
+    <div class="sn off" id="sn3">3</div>
+    <div class="sl off" id="sl3">Review &amp; Save</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="st1">
+    <div class="card">
+      <div class="chdr">📁 Step 1 — Select Item Category</div>
+      <div class="cgrid" id="catGrid"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="st2" style="display:none">
+    <div class="card">
+      <div class="chdr" id="fhdr">📝 Step 2 — Fill Details</div>
+
+      <div style="margin-bottom:16px">
+        <div class="fl" style="margin-bottom:5px">Search Item Number / Description <span class="r">*</span></div>
+        <div class="sw">
+          <span class="si">🔍</span>
+          <input type="text" id="iSrch" placeholder="Type item no. or description…" autocomplete="off"
+            oninput="doSearch()" onkeydown="ddKey(event)" onblur="setTimeout(closeDd,200)">
+          <div class="ddl" id="iDd" style="display:none"></div>
+        </div>
+        <div class="chips" id="chipRow" style="display:none">
+          <div class="chip"><div class="chl">Item No.</div><div class="chv" id="cp1"></div></div>
+          <div class="chip"><div class="chl">UoM Code</div><div class="chv" id="cp2"></div></div>
+          <div class="chip"><div class="chl">Whse</div><div class="chv" id="cp3"></div></div>
+          <div class="chip"><div class="chl">Account Code</div><div class="chv" id="cp4"></div></div>
+          <div class="chip"><div class="chl">Project</div><div class="chv" id="cp5"></div></div>
+          <div class="chip"><div class="chl">Staff</div><div class="chv" id="cp6"></div></div>
+        </div>
+      </div>
+
+      <div class="afz">
+        <div class="afzh">🔒 Auto-Filled from Master — Read Only</div>
+        <div class="fg3">
+          <div class="fg"><div class="fl">S.NO <span class="a">auto</span></div><input id="f_sno" class="af" readonly></div>
+          <div class="fg"><div class="fl">Item No. <span class="a">auto</span></div><input id="f_itemNo" class="af" readonly></div>
+          <div class="fg"><div class="fl">UoM Code <span class="a">auto</span></div><input id="f_uom" class="af" readonly></div>
+          <div class="fg"><div class="fl">Whse <span class="a">auto</span></div><input id="f_whse" class="af" readonly></div>
+          <div class="fg"><div class="fl">Account Code <span class="a">auto</span></div><input id="f_acct" class="af" readonly></div>
+          <div class="fg"><div class="fl">Project <span class="a">auto</span></div><input id="f_proj" class="af" readonly></div>
+        </div>
+        <div class="fg" style="margin-top:12px"><div class="fl">Item Description <span class="a">auto</span></div><input id="f_desc" class="af" readonly></div>
+      </div>
+
+      <div class="sectlabel">✏️ Fill In — Sheet 1 &amp; Sheet 2 Fields</div>
+      <div class="fg2" style="margin-bottom:13px">
+        <div class="fg"><div class="fl">Quantity <span class="r">*</span></div>
+          <input type="number" id="f_qty" placeholder="e.g. 50" min="0" step="0.001" oninput="calcTotal()"></div>
+        <div class="fg"><div class="fl">Info Price (Unit Price)</div>
+          <input type="number" id="f_price" placeholder="e.g. 8.50" min="0" step="0.01" oninput="calcTotal()"></div>
+        <div class="fg"><div class="fl">Total <span class="a">auto = qty × price</span></div>
+          <input id="f_total" class="af" readonly placeholder="Auto calculated"></div>
+        <div class="fg"><div class="fl">Ordered</div>
+          <input id="f_ord" placeholder="Order reference (optional)"></div>
+        <div class="fg"><div class="fl">Department</div>
+          <select id="f_dept">
+            <option value="">-- Select --</option>
+            <option>ADMN&amp;GEN</option><option>CIVIL</option><option>FINANCE</option>
+            <option>HAVC</option><option>HR</option><option>MEP</option>
+            <option>PROCUR</option><option>QC</option><option>QS</option><option>STCONIN</option>
+          </select></div>
+        <div class="fg"><div class="fl">Cluster / Units</div>
+          <select id="f_clust" onchange="onClust()">
+            <option value="">-- Select cluster --</option>
+          </select></div>
+        <div class="fg"><div class="fl">Property Type <span class="a">auto from cluster</span></div>
+          <input id="f_prop" class="af" readonly placeholder="Auto-filled on cluster select"></div>
+        <div class="fg"><div class="fl">Cost Code</div>
+          <select id="f_cost"><option value="">-- Select --</option></select></div>
+        <div class="fg"><div class="fl">Staff Name / Assets</div>
+          <select id="f_staff"></select></div>
+        <div class="fg full"><div class="fl">Item Details / Notes</div>
+          <textarea id="f_notes" placeholder="Specifications, serial numbers, remarks…"></textarea></div>
+      </div>
+
+      <div id="sh2block">
+        <div class="sectlabel">📄 Sheet 2 Extra Fields (Inventory.xlsx columns)</div>
+        <div class="fg3" style="margin-bottom:13px">
+          <div class="fg"><div class="fl">Qty in Whse</div>
+            <input id="f_qtywhse" placeholder="Qty in warehouse"></div>
+          <div class="fg"><div class="fl">Last Purchase Price</div>
+            <input type="number" id="f_lastprice" placeholder="0.00" step="0.01"></div>
+          <div class="fg"><div class="fl">Asset Free Parts</div>
+            <input id="f_afp" placeholder="(optional)"></div>
+          <div class="fg"><div class="fl">Supplier Name</div>
+            <input id="f_supname" placeholder="Supplier company name"></div>
+          <div class="fg"><div class="fl">Supplier VAT No</div>
+            <input id="f_supvat" placeholder="VAT registration number"></div>
+          <div class="fg"><div class="fl">Supplier Invoice No</div>
+            <input id="f_supinv" placeholder="Invoice number"></div>
+          <div class="fg"><div class="fl">Supplier Invoice Date</div>
+            <input type="date" id="f_supdate"></div>
+          <div class="fg"><div class="fl">SVItemCode</div>
+            <input id="f_svcode" placeholder="Supplier item code"></div>
+        </div>
+      </div>
+
+      <div class="brow">
+        <button class="btn bg" onclick="goStep(1)">← Back</button>
+        <button class="btn bp" onclick="goStep(3)">Preview &amp; Review →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="st3" style="display:none">
+    <div class="card">
+      <div class="chdr">✅ Step 3 — Review Before Saving</div>
+      <div id="rvBox"></div>
+      <div class="brow">
+        <button class="btn bg" onclick="goStep(2)">← Edit</button>
+        <button class="btn bs" onclick="saveRow()">💾 Save to Sheet</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════ SHEET PAGE ═══════════════════════════ -->
+<div class="pg" id="pg-sheet">
+<div class="wrap">
+  <div class="stabs">
+    <div class="stab on" id="stab1" onclick="switchSheet(1)">📋 Sheet 1 — Inventory (17 cols)</div>
+    <div class="stab"    id="stab2" onclick="switchSheet(2)">📋 Sheet 2 — MEP Inventory (25 cols)</div>
+  </div>
+  <div class="sa">
+    <div class="sf">
+      <input style="width:230px" type="text" id="shSrch" placeholder="🔍 Search all columns…" oninput="renderSheet()">
+      <select style="width:148px" id="shCat" onchange="renderSheet()">
+        <option value="">All Categories</option>
+        <option value="CIV">CIV — Civil</option>
+        <option value="GEN">GEN — General</option>
+        <option value="MEP">MEP — MEP</option>
+        <option value="HVA">HVA — HVAC</option>
+        <option value="TOO">TOO — Tools</option>
+        <option value="MEC">MEC — Mech</option>
+        <option value="SER">SER — Services</option>
+      </select>
+      <span class="cb" id="rowCnt">0 rows</span>
+    </div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn bg bsm" onclick="gotoTab('form')">➕ Add</button>
+      <button class="btn be bsm" onclick="exportSheet()">⬇ Export Excel</button>
+      <button class="btn bd bsm" onclick="clearAll()">🗑 Clear Sheet</button>
+    </div>
+  </div>
+  <div class="shwrap"><table class="sht" id="shTbl">
+    <thead id="shHead"></thead>
+    <tbody id="shBody"></tbody>
+  </table></div>
+  <div class="empty" id="shEmpty" style="display:none">
+    <div class="ei">📋</div>
+    <div>No records. <a href="#" onclick="gotoTab('form')" style="color:var(--acc)">Add entry →</a></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════ MRS PAGE ═══════════════════════════ -->
+<div class="pg" id="pg-mrs">
+<div class="wrap">
+
+  <!-- MRS sub-tabs -->
+  <div class="stabs" id="mrsTabs">
+    <div class="stab on" id="mrstab-new"  onclick="switchMRS('new')">📝 New MRS</div>
+    <div class="stab"    id="mrstab-list" onclick="switchMRS('list')">📂 MRS Records</div>
+    <div class="stab"    id="mrstab-view" onclick="switchMRS('view')" id="mrstab-view" style="display:none">👁 Preview</div>
+  </div>
+
+  <!-- NEW MRS -->
+  <div id="mrs-new">
+    <div class="card">
+      <div class="chdr">📋 Site Material Requisition Slip — ABCON / BOGEST</div>
+
+      <!-- Header info -->
+      <div class="mrs-header-row">
+        <div class="fg">
+          <div class="fl">MRS No. <span class="r">*</span></div>
+          <input id="mrs_no" placeholder="e.g. 12078" type="number">
+        </div>
+        <div class="fg">
+          <div class="fl">Date <span class="r">*</span></div>
+          <input id="mrs_date" type="date">
+        </div>
+        <div class="fg">
+          <div class="fl">Contractor Name</div>
+          <input id="mrs_contractor" value="ABCON" placeholder="Contractor">
+        </div>
+        <div class="fg">
+          <div class="fl">Location / Cluster <span class="r">*</span></div>
+          <select id="mrs_location">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="fg2" style="margin-bottom:16px">
+        <div class="fg">
+          <div class="fl">Free / Return Label / Rental / Chargable</div>
+          <select id="mrs_type">
+            <option value="Chargable">Chargable</option>
+            <option value="Free">Free</option>
+            <option value="Return label">Return label</option>
+            <option value="Rental">Rental</option>
+          </select>
+        </div>
+        <div class="fg">
+          <div class="fl">Remarks / Notes</div>
+          <input id="mrs_remarks" placeholder="General remarks for this slip">
+        </div>
+      </div>
+
+      <!-- Items table -->
+      <div class="sectlabel">📦 Material Items (up to 10 rows)</div>
+      <div style="overflow-x:auto">
+      <table class="mrs-table" id="mrsItemTable">
+        <thead>
+          <tr>
+            <th style="width:36px">SR</th>
+            <th style="min-width:130px">Item Code</th>
+            <th style="min-width:280px">Description of Material</th>
+            <th style="width:70px">UOM</th>
+            <th style="width:80px">Qty</th>
+            <th style="width:100px">Cost Code</th>
+            <th style="min-width:150px">Remarks</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="mrsItemBody"></tbody>
+      </table>
+      </div>
+
+      <!-- Signatures -->
+      <div class="sectlabel" style="margin-top:16px">✍️ Signatures</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px">
+        <div class="fg"><div class="fl">Requested By</div><input id="sig_req" placeholder="Name"></div>
+        <div class="fg"><div class="fl">Approved By Foreman</div><input id="sig_fmn" placeholder="Name"></div>
+        <div class="fg"><div class="fl">Approved By Engineer</div><input id="sig_eng" placeholder="Name"></div>
+        <div class="fg"><div class="fl">Receiving Sign</div><input id="sig_rcv" placeholder="Name"></div>
+      </div>
+
+      <div class="brow">
+        <button class="btn bg" onclick="clearMRSForm()">🗑 Clear</button>
+        <button class="btn bpur" onclick="previewMRS()">👁 Preview Slip</button>
+        <button class="btn bs" onclick="saveMRS()">💾 Save MRS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MRS LIST -->
+  <div id="mrs-list" style="display:none">
+    <div class="sa">
+      <div class="sf">
+        <input style="width:220px" type="text" id="mrsSearch" placeholder="🔍 Search MRS records…" oninput="renderMRSList()">
+        <span class="cb" id="mrsCnt">0 slips</span>
+      </div>
+      <div style="display:flex;gap:7px">
+        <button class="btn bg bsm" onclick="switchMRS('new')">➕ New MRS</button>
+        <button class="btn be bsm" onclick="exportMRSExcel()">⬇ Export All MRS</button>
+      </div>
+    </div>
+    <div class="mrs-list" id="mrsList"></div>
+    <div class="empty" id="mrsEmpty" style="display:none">
+      <div class="ei">📋</div>
+      <div>No MRS records yet. <a href="#" onclick="switchMRS('new')" style="color:var(--acc)">Create one →</a></div>
+    </div>
+  </div>
+
+  <!-- MRS PREVIEW -->
+  <div id="mrs-view" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <button class="btn bg bsm" onclick="switchMRS('list')">← Back to List</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn bpur bsm" onclick="printMRS()">🖨 Print</button>
+        <button class="btn be bsm" onclick="exportMRSSingle()">⬇ Export Excel</button>
+        <button class="btn bd bsm" onclick="deleteMRS()">🗑 Delete</button>
+      </div>
+    </div>
+    <div id="mrsPreviewBox"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══════════════════════════ DASHBOARD PAGE ═══════════════════════════ -->
+<div class="pg" id="pg-dash">
+<div class="wrap">
+  <div id="dashContent"></div>
+</div>
+</div>
+
+<div class="toast" id="toast" style="display:none"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// MASTER DATA (truncated for clarity — full dataset embedded below)
+// ══════════════════════════════════════════════════════════════════
+const ITEMS=[{"sno":"1","itemNo":"CIV-100012","desc":"WOODEN SCAFOLDING BOARD","uom":"PCs","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"2","itemNo":"CIV-100016","desc":"NITOTILE GP - POLYMER MODIFIED TILE ADHESIVE (25 KG/BAG) YIELD - 18.1 LITERS / BAG","uom":"BAG","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"3","itemNo":"CIV-100029","desc":"MASKING TAPE 2\"","uom":"BOX","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"4","itemNo":"CIV-100031","desc":"TILE TRIM SQUARE TYPE 12.5 mm X 2.70 MTR, SS316, BRUSHED FINISH","uom":"MTR","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"5","itemNo":"CIV-100039","desc":"POLYETHYLENE FILLER BOARD 20 (WHITE)","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"6","itemNo":"CIV-100042","desc":"WIRE NAIL 4\"","uom":"kg","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"7","itemNo":"CIV-100045","desc":"STEEL / CONCRETE NAIL 2\"","uom":"kg","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"8","itemNo":"CIV-100046","desc":"POLYTHENE SHEET - 500 GAUGE","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"9","itemNo":"CIV-100049","desc":"DOTTED GLOVES - GOOD QUALITY","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"10","itemNo":"CIV-100050","desc":"STEEL CUTTING DISC 4.5\" (1  mm)","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"11","itemNo":"CIV-100051","desc":"PLASTERING MESH SS 304 (COIL MESH) (200 mm X 50MTR)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"12","itemNo":"CIV-100066","desc":"CEMENT OPC - 50 KG / BAG","uom":"BAG","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"13","itemNo":"CIV-100068","desc":"READY MIXED CONCRETE C20/20, OPC","uom":"M3","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"62","itemNo":"CIV-100490","desc":"CURRING PIPE (WATER HOSE) 1\"","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"63","itemNo":"CIV-100493","desc":"BRC MESH (GRADE A393 - 10  mm THICKNESS)","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"84","itemNo":"CIV-100872","desc":"REBAR 20 mm x 12MTR","uom":"TON","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"85","itemNo":"CIV-100873","desc":"REBAR 25 mm x 12 MTR","uom":"TON","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"196","itemNo":"GEN-100014","desc":"BRACING TUBE 6.00 MTR","uom":"PCs","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"197","itemNo":"GEN-100048","desc":"GREEN NET MESH (SIZE : 3 X 50 MTR. 80 % GREEN)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"291","itemNo":"GEN-101489","desc":"Diesel Fuel","uom":"Liters","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"329","itemNo":"MEP-100017","desc":"NUMBERING FERRULE 0-9, 2.5SP mm","uom":"PKT","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"330","itemNo":"MEP-100018","desc":"ALPHABET FERRULES R, Y, B, F, C, D, T, E, X,G - 2.5 SQ mm","uom":"PKT","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"333","itemNo":"MEP-100021","desc":"INSULATION TAPE RED","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"334","itemNo":"MEP-100023","desc":"INSULATION TAPE YELLOW","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"335","itemNo":"MEP-100024","desc":"INSULATION TAPE BLUE","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"557","itemNo":"MEP-100656","desc":"2.5  mm2 SINGLE CORE WIRE - RED (BRAND NAME : NCF, OMAN)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"558","itemNo":"MEP-100657","desc":"2.5  mm2 SINGLE CORE WIRE - YELLOW  (BRAND NAME : NCF, OMAN)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"894","itemNo":"TOO-100003","desc":"C LOCK STANDARD 1.00 MTR","uom":"PCs","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"900","itemNo":"TOO-100047","desc":"KNIPEX CUTTER 8\"","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"905","itemNo":"TOO-100603","desc":"MEASURING TAPE - 5  MTR","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"311","itemNo":"HVA-100052","desc":"HEXAGON HEAD BOLT , DIN 933, M8 X 30  mm GALVANISED","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"313","itemNo":"HVA-100437","desc":"RUBBER LINED SPLIT CLAMP (63 - 66  mm) - PIPE OD 63   mm","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"328","itemNo":"MEC-101193","desc":"TUBLESS TYRE 10-16.5","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"888","itemNo":"SER-101476","desc":"Rental of Formworks for 10-59 Part 3","uom":"Months","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"}];
+
+const STAFF=[{"code":"GEN4","name":"GEN4 — General"},{"code":"46","name":"SIBY MATHEW"},{"code":"48","name":"CHUNILAL VALJOR RAM"},{"code":"49","name":"RAM SUNDER"},{"code":"62","name":"MUJAHRUDEN SHAH"},{"code":"80","name":"KUNJU KUNJU RAMESH KUMAR"},{"code":"81","name":"ARSHAD HAMEED SIDDIQUI"},{"code":"85","name":"Pradeep Kumar"},{"code":"87","name":"YUVRAJ UTTAM KUTE"},{"code":"94","name":"LAXMAN VISHWAKARMA"},{"code":"126","name":"RAJESH THAKUR"},{"code":"633","name":"PETER SAMSON DERRICK"},{"code":"637","name":"SAQIB JAVED"},{"code":"638","name":"MUZAFFAR IQBAL HUSSAIN"},{"code":"639","name":"MUHAMMAD RAMZAN"},{"code":"645","name":"ALI RAZA KHALID"},{"code":"666","name":"PALASH PATRA"},{"code":"680","name":"SANDEEP KUMAR"},{"code":"703","name":"SEN MATHEW PHILIP"},{"code":"704","name":"BISHNU BAHADUR KARKI"},{"code":"808","name":"PRAMOD KOTTARAM"},{"code":"GEN4","name":"GENERAL"}];
+
+const CMAP={"10-100-1":"VL-TYP-C","10-100-2":"VL-TYP-C","10-100-3":"VL-TYP-C","10-100-4":"VL-TYP-C","10-100-5":"VL-TYP-C","10-101-1":"VL-SDV","10-101-2":"VL-SDV","10-101-3":"VL-SDV","10-102-1":"VL-TYP-C","10-102-2":"VL-TYP-C","10-102-3":"VL-TYP-C","10-103-1":"VL-SDV","10-103-2":"VL-SDV","10-103-3":"VL-SDV","10-104-1":"VL-TYP-C","10-104-2":"VL-TYP-C","10-105-1":"VL-TYP-A","10-105-2":"VL-TYP-A","10-105-3":"VL-TYP-A","10-105-4":"VL-TYP-A","10-105-5":"VL-TYP-A","10-105-6":"VL-TYP-A","10-105-7":"VL-TYP-A","10-105-8":"VL-TYP-A","10-106-1":"VL-SDV","10-106-2":"VL-SDV","10-106-3":"VL-SDV","10-107-1":"VL-5","10-107-2":"VL-5","10-107-3":"VL-5","10-108-1":"VL-5","10-108-2":"VL-5","10-109-1":"VL-5","10-130-1":"VL-TYP-B","10-130-2":"VL-TYP-B","10-131-1":"VL-TYP-B","10-131-2":"VL-TYP-B","10-132-1":"VL-TYP-B","10-133-1":"VL-TYP-B","10-134-1":"VL-TYP-B","10-135-1":"VL-TYP-B","10-94-1":"VL-TYP-B","10-94-2":"VL-TYP-B","10-94-3":"VL-TYP-B","10-95-1":"VL-TYP-B","10-95-2":"VL-TYP-B","10-96-1":"VL-TYP-B","10-97-1":"VL-TYP-B","10-97-2":"VL-TYP-B","10-98-1":"VL-TYP-C","10-98-2":"VL-TYP-C","10-99-1":"VL-SDV","10-99-2":"VL-SDV","CLS94/95":"VL-TYP-B","CLS96/97":"VL-TYP-B","CLST-100":"VL-TYP-C","CLST-101":"VL-SDV","CLST-102":"VL-TYP-C","CLST-103":"VL-SDV","CLST-104":"VL-TYP-C","CLST-105":"VL-TYP-A","CLST-106":"VL-SDV","CLST-107":"VL-5","CLST-108":"VL-5","CLST-109":"VL-5","CLST-13":"VL-TYP-A","CLST-130":"VL-TYP-B","CLST-131":"VL-TYP-B","CLST-132":"VL-TYP-B","CLST-133":"VL-TYP-B","CLST-134":"VL-TYP-B","CLST-135":"VL-TYP-B","CLST-15":"VL-TYP-A","CLST-17":"VL-TYP-A","CLST-20":"VL-TYP-A","CLST-21":"VL-TYP-C","CLST-22":"VL-TYP-A","CLST-23":"VL-TYP-C","CLST-24":"VL-TYP-A","CLST-25":"VL-TYP-C","CLST-26":"VL-TYP-C","CLST-98":"VL-TYP-C","CLST-99":"VL-SDV"};
+
+const CCODES=[["1000","Prelims"],["1001","Site Mobilization"],["1002","Site Office & Administration"],["1003","Utilities & Temporary Facilities"],["1004","Safety & Security"],["1005","Scaffolding / Access"],["1006","Temporary Road/Site Clearance"],["1007","Insurance / Bonds / Permits"],["1008","Environmental/Waste Management"],["1009","Testing & Quality Control"],["1010","Stationery & Admin Consumables"],["1011","Camp Running"],["1012","Staff Accommodation"],["1013","Cleaning & Cafeteria"],["1014","Tradesman Transportation"],["1015","Staff Transportation"],["1016","Staff Salary"],["1017","Hiring Cost"],["1021","Others"],["1100","Plastering"],["1200","Painting & Decorations"],["1300","Waterproofing-SuperStructure"],["1400","Tileworks (All Area)"],["1500","Ceiling Finishes"],["1600","Doors & Windows"],["1700","Handrails & Balustrade"],["1800","Kitchen Cabin & Vanity Units"],["1900","MEP"],["2000","Excavation & Disposal"],["2100","HVAC"],["2200","External MEP & Irrigation"],["2300","Boundary Wall"],["2400","Interlock Tiles"],["2500","Kerbstone"],["2600","Landscaping"],["2700","Builders Works"],["2800","Cleaning & Handing Over"],["2900","Consumable Items"],["3000","Backfilling"],["3100","General Works"],["3600","Tower Crane Cost"],["4700","Hand/Power Tools"],["4800","Equipment Maintenance"],["5000","Foundations Incl Ground Slab"],["6000","Waterproofing-Substructure"],["7000","Masonry Works-SubStructure"],["8000","Concreting-SuperStructure"],["9000","Masonry Works-SuperStructure"],["FIXA","Fixed Asset"],["GEN3","GENERAL"],["VARI","VARIATION"]];
+
+const CATS=[
+  {p:'CIV',n:'Civil',      i:'🧱',d:'CIVIL',    c:195},
+  {p:'GEN',n:'General',    i:'📦',d:'ADMN&GEN', c:115},
+  {p:'MEP',n:'MEP',        i:'⚡',d:'MEP',      c:559},
+  {p:'HVA',n:'HVAC',       i:'❄️',d:'HAVC',     c:18},
+  {p:'TOO',n:'Tools',      i:'🔧',d:'CIVIL',    c:112},
+  {p:'MEC',n:'Mechanical', i:'⚙️',d:'CIVIL',    c:1},
+  {p:'SER',n:'Services',   i:'🛎',d:'STCONIN',  c:6},
+];
+
+const SH1_COLS=[
+  {key:'sno',       hdr:'S.NO',               auto:true, w:7},
+  {key:'itemNo',    hdr:'Item No.',            auto:true, w:16,isItem:true},
+  {key:'desc',      hdr:'Item Description',    auto:true, w:55},
+  {key:'uom',       hdr:'UoM Code',            auto:true, w:10},
+  {key:'notes',     hdr:'Item Details',        auto:false,w:30},
+  {key:'qty',       hdr:'Quantity',            auto:false,w:10},
+  {key:'price',     hdr:'Info Price',          auto:false,w:12},
+  {key:'total',     hdr:'Total',               auto:true, w:12},
+  {key:'whse',      hdr:'Whse',                auto:true, w:8},
+  {key:'ord',       hdr:'Ordered',             auto:false,w:12},
+  {key:'acct',      hdr:'Account Code',        auto:true, w:14},
+  {key:'proj',      hdr:'Project',             auto:true, w:10},
+  {key:'dept',      hdr:'Department',          auto:false,w:12},
+  {key:'prop',      hdr:'Property Type',       auto:false,w:14},
+  {key:'clust',     hdr:'Cluster / Units',     auto:false,w:16},
+  {key:'cost',      hdr:'Cost Code',           auto:false,w:10},
+  {key:'staff',     hdr:'Staff Name / Assets', auto:false,w:32},
+];
+
+const SH2_COLS=[...SH1_COLS,
+  {key:'qtywhse',   hdr:'Qty in Whse',           auto:false,w:12},
+  {key:'lastprice', hdr:'Last Purchase Price',    auto:false,w:20},
+  {key:'afp',       hdr:'Asset Free Parts',       auto:false,w:18},
+  {key:'supname',   hdr:'Supplier Name',          auto:false,w:25},
+  {key:'supvat',    hdr:'Supplier VAT No',        auto:false,w:20},
+  {key:'supinv',    hdr:'Supplier Invoice No',    auto:false,w:20},
+  {key:'supdate',   hdr:'Supplier Invoice Date',  auto:false,w:22},
+  {key:'svcode',    hdr:'SVItemCode',             auto:false,w:14},
+];
+
+// ══ STATE ══
+let selCat=null,selItem=null;
+let sheet1=[],sheet2=[];
+let mrsList=[];
+let activeMRSIdx=-1;
+let activeSheet=1;
+let sortCol=null,sortDir=1;
+let ddItems=[],ddIdx=-1;
+let activeMRSSub='new';
+
+// ══ BOOT ══
+window.addEventListener('DOMContentLoaded',()=>{
+  try{sheet1=JSON.parse(localStorage.getItem('shc_s1')||'[]')}catch(e){sheet1=[]}
+  try{sheet2=JSON.parse(localStorage.getItem('shc_s2')||'[]')}catch(e){sheet2=[]}
+  try{mrsList=JSON.parse(localStorage.getItem('shc_mrs')||'[]')}catch(e){mrsList=[]}
+  buildCats();buildClusters();buildCosts();buildStaff();
+  buildMRSLocations();buildMRSItems();
+  setDefaultDate();
+  updateStat();
+});
+
+function persist(){
+  localStorage.setItem('shc_s1',JSON.stringify(sheet1));
+  localStorage.setItem('shc_s2',JSON.stringify(sheet2));
+  localStorage.setItem('shc_mrs',JSON.stringify(mrsList));
+  updateStat();
+}
+function updateStat(){
+  document.getElementById('topStat').textContent=`INV:${sheet1.length}  MRS:${mrsList.length}`;
+}
+function setDefaultDate(){
+  const today=new Date().toISOString().slice(0,10);
+  const mdate=document.getElementById('mrs_date');
+  if(mdate&&!mdate.value) mdate.value=today;
+  // auto-fill MRS no
+  const mno=document.getElementById('mrs_no');
+  if(mno&&!mno.value){
+    const maxNo=mrsList.reduce((m,r)=>Math.max(m,parseInt(r.no)||0),12076);
+    mno.value=maxNo+1;
+  }
+}
+
+// ══ BUILDS ══
+function buildCats(){
+  document.getElementById('catGrid').innerHTML=CATS.map(c=>
+    `<div class="ctile" id="ct-${c.p}" onclick="pickCat('${c.p}')">
+      <div class="cti">${c.i}</div><div class="ctn">${c.n}</div>
+      <div class="ctc">${c.p}-XXXXXX</div>
+      <div class="ctx">${c.c}+ items</div>
+    </div>`).join('');
+}
+function buildClusters(){
+  const sel=document.getElementById('f_clust');
+  Object.keys(CMAP).sort().forEach(k=>{
+    const o=document.createElement('option');
+    o.value=k;o.textContent=`${k}  (${CMAP[k]})`;sel.appendChild(o);
+  });
+}
+function buildMRSLocations(){
+  const sel=document.getElementById('mrs_location');
+  // Pre-fill locations from image context and cluster map
+  const locs=['10-59 MUB','10-59 Part 3','CLST-100','CLST-101','CLST-102','CLST-103',
+    'CLST-104','CLST-105','CLST-106','CLST-107','CLST-108','CLST-109','CLST-13',
+    'CLST-130','CLST-131','CLST-132','CLST-133','CLST-134','CLST-135','CLST-15',
+    'CLST-17','CLST-20','CLST-21','CLST-22','CLST-23','CLST-24','CLST-25',
+    'CLST-26','CLS94/95','CLS96/97','Warehouse SHC01','Site Office','Other'];
+  locs.forEach(l=>{
+    const o=document.createElement('option');o.value=l;o.textContent=l;sel.appendChild(o);
+  });
+}
+function buildCosts(){
+  const sel=document.getElementById('f_cost');
+  CCODES.forEach(([code,name])=>{
+    const o=document.createElement('option');o.value=code;o.textContent=`${code} — ${name}`;sel.appendChild(o);
+  });
+}
+function buildStaff(){
+  const sel=document.getElementById('f_staff');
+  sel.innerHTML='';
+  STAFF.forEach(s=>{
+    const o=document.createElement('option');o.value=s.code;o.textContent=s.name||s.code;sel.appendChild(o);
+  });
+}
+
+// ══ MRS ITEM TABLE ══
+function buildMRSItems(){
+  const tbody=document.getElementById('mrsItemBody');
+  tbody.innerHTML='';
+  for(let i=1;i<=10;i++){
+    const row=document.createElement('tr');
+    row.id=`mrsrow-${i}`;
+    row.innerHTML=`
+      <td class="mrs-sno">${i}</td>
+      <td style="position:relative">
+        <input id="mcode-${i}" placeholder="Item code" autocomplete="off"
+          oninput="mrsSearch(${i})" onblur="setTimeout(()=>closeMrsDd(${i}),200)"
+          onkeydown="mrsDdKey(event,${i})">
+        <div class="ddl" id="mrsDd-${i}" style="display:none"></div>
+      </td>
+      <td><input id="mdesc-${i}" placeholder="Description of material"></td>
+      <td><input id="muom-${i}" placeholder="UOM" style="width:65px"></td>
+      <td><input id="mqty-${i}" placeholder="0" type="number" min="0" step="0.001" style="width:75px"></td>
+      <td>
+        <select id="mcost-${i}" style="font-size:11px;padding:4px 6px">
+          <option value="">Cost code</option>
+          ${CCODES.map(([c,n])=>`<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </td>
+      <td><input id="mremark-${i}" placeholder="Remarks"></td>
+      <td><button class="ib" onclick="clearMRSRow(${i})" title="Clear row">✕</button></td>`;
+    tbody.appendChild(row);
+  }
+}
+
+let mrsDdIdx={};
+let mrsDdItems={};
+
+function mrsSearch(rowIdx){
+  const q=(document.getElementById(`mcode-${rowIdx}`).value||'').toLowerCase().trim();
+  const dd=document.getElementById(`mrsDd-${rowIdx}`);
+  if(!q){dd.style.display='none';return;}
+  mrsDdItems[rowIdx]=ITEMS.filter(it=>
+    it.itemNo.toLowerCase().includes(q)||it.desc.toLowerCase().includes(q)
+  ).slice(0,15);
+  if(!mrsDdItems[rowIdx].length){dd.style.display='none';return;}
+  mrsDdIdx[rowIdx]=-1;
+  dd.innerHTML=mrsDdItems[rowIdx].map((it,i)=>
+    `<div class="ddi" id="mrsdd-${rowIdx}-${i}" onclick="pickMRSItem(${rowIdx},'${it.itemNo.replace(/'/g,"\\'")}')">
+      <div class="did">${it.itemNo}</div>
+      <div class="dds">${it.desc}</div>
+      <div class="ddm">${it.uom}</div>
+    </div>`).join('');
+  dd.style.display='block';
+}
+function mrsDdKey(e,rowIdx){
+  const dd=document.getElementById(`mrsDd-${rowIdx}`);
+  if(dd.style.display==='none')return;
+  const items=mrsDdItems[rowIdx]||[];
+  if(e.key==='ArrowDown'){mrsDdIdx[rowIdx]=Math.min((mrsDdIdx[rowIdx]||0)+1,items.length-1);hiMrsDd(rowIdx);e.preventDefault();}
+  else if(e.key==='ArrowUp'){mrsDdIdx[rowIdx]=Math.max((mrsDdIdx[rowIdx]||0)-1,0);hiMrsDd(rowIdx);e.preventDefault();}
+  else if(e.key==='Enter'&&(mrsDdIdx[rowIdx]||0)>=0){pickMRSItem(rowIdx,items[mrsDdIdx[rowIdx]].itemNo);e.preventDefault();}
+  else if(e.key==='Escape')closeMrsDd(rowIdx);
+}
+function hiMrsDd(rowIdx){
+  const idx=mrsDdIdx[rowIdx]||0;
+  document.querySelectorAll(`[id^="mrsdd-${rowIdx}-"]`).forEach((el,i)=>{
+    el.className='ddi'+(i===idx?' hi':'');
+  });
+}
+function closeMrsDd(rowIdx){document.getElementById(`mrsDd-${rowIdx}`).style.display='none';}
+function pickMRSItem(rowIdx,itemNo){
+  const it=ITEMS.find(i=>i.itemNo===itemNo);
+  if(!it)return;
+  document.getElementById(`mcode-${rowIdx}`).value=it.itemNo;
+  document.getElementById(`mdesc-${rowIdx}`).value=it.desc;
+  document.getElementById(`muom-${rowIdx}`).value=it.uom;
+  closeMrsDd(rowIdx);
+}
+function clearMRSRow(rowIdx){
+  ['mcode','mdesc','muom','mqty','mremark'].forEach(p=>{
+    document.getElementById(`${p}-${rowIdx}`).value='';
+  });
+  document.getElementById(`mcost-${rowIdx}`).value='';
+}
+
+// ══ CATEGORY PICK ══
+function pickCat(p){
+  selCat=p;
+  document.querySelectorAll('.ctile').forEach(t=>t.classList.remove('sel'));
+  document.getElementById('ct-'+p).classList.add('sel');
+  const cat=CATS.find(c=>c.p===p);
+  document.getElementById('fhdr').innerHTML=`📝 Step 2 — Fill Details &nbsp;<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600">${cat.i} ${cat.n}</span>`;
+  document.getElementById('f_dept').value=cat.d;
+  document.getElementById('iSrch').value='';
+  document.getElementById('iSrch').placeholder=`Search ${p} items by number or description…`;
+  clearAuto();goStep(2);
+}
+
+// ══ ITEM SEARCH ══
+function doSearch(){
+  const q=document.getElementById('iSrch').value.trim().toLowerCase();
+  const dd=document.getElementById('iDd');
+  if(!q){dd.style.display='none';return;}
+  ddItems=ITEMS.filter(it=>{
+    const mc=!selCat||it.itemNo.toLowerCase().startsWith(selCat.toLowerCase());
+    return mc&&(it.itemNo.toLowerCase().includes(q)||it.desc.toLowerCase().includes(q));
+  }).slice(0,20);
+  if(!ddItems.length){dd.style.display='none';return;}
+  ddIdx=-1;
+  dd.innerHTML=ddItems.map((it,i)=>
+    `<div class="ddi" id="ddi${i}" onclick="pickItem('${it.itemNo.replace(/'/g,"\\'")}')">
+      <div class="did">${it.itemNo}</div>
+      <div class="dds">${it.desc}</div>
+      <div class="ddm">${it.uom} · ${it.whse} · ${it.proj}</div>
+    </div>`).join('');
+  dd.style.display='block';
+}
+function ddKey(e){
+  const dd=document.getElementById('iDd');
+  if(dd.style.display==='none')return;
+  if(e.key==='ArrowDown'){ddIdx=Math.min(ddIdx+1,ddItems.length-1);hiDD();e.preventDefault();}
+  else if(e.key==='ArrowUp'){ddIdx=Math.max(ddIdx-1,0);hiDD();e.preventDefault();}
+  else if(e.key==='Enter'&&ddIdx>=0){pickItem(ddItems[ddIdx].itemNo);e.preventDefault();}
+  else if(e.key==='Escape')closeDd();
+}
+function hiDD(){document.querySelectorAll('.ddi').forEach((el,i)=>{el.className='ddi'+(i===ddIdx?' hi':'')});}
+function closeDd(){document.getElementById('iDd').style.display='none';}
+
+function pickItem(itemNo){
+  const it=ITEMS.find(i=>i.itemNo===itemNo);
+  if(!it)return;
+  selItem=it;
+  document.getElementById('iSrch').value=`${it.itemNo} — ${it.desc}`;
+  closeDd();
+  document.getElementById('f_sno').value=it.sno;
+  document.getElementById('f_itemNo').value=it.itemNo;
+  document.getElementById('f_desc').value=it.desc;
+  document.getElementById('f_uom').value=it.uom;
+  document.getElementById('f_whse').value=it.whse;
+  document.getElementById('f_acct').value=it.acct;
+  document.getElementById('f_proj').value=it.proj;
+  document.getElementById('f_staff').value=it.staff||'GEN4';
+  if(it.mep){
+    const m=it.mep;
+    if(m.dept)document.getElementById('f_dept').value=m.dept;
+    if(m.propType)document.getElementById('f_prop').value=m.propType;
+    if(m.cluster)document.getElementById('f_clust').value=m.cluster;
+    if(m.costCode)document.getElementById('f_cost').value=m.costCode;
+    if(m.qtyInWhse)document.getElementById('f_qtywhse').value=m.qtyInWhse;
+    if(m.lastPrice)document.getElementById('f_lastprice').value=m.lastPrice;
+    if(m.quantity)document.getElementById('f_qty').value=m.quantity;
+  }
+  document.getElementById('cp1').textContent=it.itemNo;
+  document.getElementById('cp2').textContent=it.uom;
+  document.getElementById('cp3').textContent=it.whse;
+  document.getElementById('cp4').textContent=it.acct;
+  document.getElementById('cp5').textContent=it.proj;
+  document.getElementById('cp6').textContent=it.staff||'GEN4';
+  document.getElementById('chipRow').style.display='flex';
+}
+function clearAuto(){
+  selItem=null;
+  ['f_sno','f_itemNo','f_desc','f_uom','f_whse','f_acct','f_proj','f_total'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  document.getElementById('f_prop').value='';
+  document.getElementById('chipRow').style.display='none';
+  document.getElementById('iSrch').value='';
+}
+function onClust(){
+  const c=document.getElementById('f_clust').value;
+  document.getElementById('f_prop').value=CMAP[c]||'';
+}
+function calcTotal(){
+  const q=parseFloat(document.getElementById('f_qty').value)||0;
+  const p=parseFloat(document.getElementById('f_price').value)||0;
+  document.getElementById('f_total').value=q&&p?(q*p).toFixed(2):'';
+}
+
+// ══ STEP NAV ══
+function goStep(n){
+  if(n===2&&!selCat){toast('Select a category first','err');return;}
+  if(n===3){
+    if(!selItem){toast('Search and select an item','err');return;}
+    if(!document.getElementById('f_qty').value){toast('Quantity is required','err');return;}
+    buildReview();
+  }
+  [1,2,3].forEach(i=>{
+    document.getElementById('st'+i).style.display=i===n?'block':'none';
+    const sn=document.getElementById('sn'+i),sl=document.getElementById('sl'+i);
+    if(i<n){sn.className='sn done';sn.textContent='✓';sl.className='sl done';}
+    else if(i===n){sn.className='sn on';sn.textContent=i;sl.className='sl on';}
+    else{sn.className='sn off';sn.textContent=i;sl.className='sl off';}
+    if(i<3)document.getElementById('ln'+i).className='sline'+(i<n?' done':'');
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function buildRow(){
+  const g=id=>document.getElementById(id).value;
+  const qty=parseFloat(g('f_qty'))||'';
+  const price=parseFloat(g('f_price'))||'';
+  return{
+    sno:selItem.sno,itemNo:selItem.itemNo,desc:selItem.desc,uom:selItem.uom,
+    notes:g('f_notes'),qty,price,
+    total:qty&&price?(qty*price).toFixed(2):'',
+    whse:selItem.whse,ord:g('f_ord'),acct:selItem.acct,proj:selItem.proj,
+    dept:g('f_dept'),prop:g('f_prop'),clust:g('f_clust'),
+    cost:g('f_cost'),staff:g('f_staff'),
+    qtywhse:g('f_qtywhse'),lastprice:g('f_lastprice'),afp:g('f_afp'),
+    supname:g('f_supname'),supvat:g('f_supvat'),supinv:g('f_supinv'),
+    supdate:g('f_supdate'),svcode:g('f_svcode'),
+    savedAt:new Date().toISOString()
+  };
+}
+
+function buildReview(){
+  const r=buildRow();
+  const s1=SH1_COLS.map(c=>[c.hdr,r[c.key]??'',c.auto]);
+  const s2extra=SH2_COLS.slice(17).map(c=>[c.hdr,r[c.key]??'',false]);
+  document.getElementById('rvBox').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div style="border-right:1px solid var(--b1);padding-right:16px">
+        <div class="sectlabel" style="margin-bottom:10px">📋 Sheet 1 Fields (17 cols)</div>
+        <table class="rvt">${s1.map(([l,v,a])=>`<tr>
+          <td class="rvl">${l}${a?' <span style="color:var(--grn);font-size:9px">●</span>':''}</td>
+          <td style="font-family:${a?'var(--mo)':'inherit'};color:${a?'var(--grn)':'var(--txt)'};font-size:${a?'11px':'13px'}">${v||'<span style="color:var(--dim)">—</span>'}</td>
+        </tr>`).join('')}</table>
+      </div>
+      <div style="padding-left:16px">
+        <div class="sectlabel" style="margin-bottom:10px">📋 Sheet 2 Extra Fields (8 cols)</div>
+        <table class="rvt">${s2extra.map(([l,v])=>`<tr>
+          <td class="rvl">${l}</td>
+          <td style="font-size:13px">${v||'<span style="color:var(--dim)">—</span>'}</td>
+        </tr>`).join('')}</table>
+      </div>
+    </div>`;
+}
+
+function saveRow(){
+  const row=buildRow();
+  sheet1.push(row);sheet2.push(row);
+  persist();
+  toast('✅ Saved to both sheets!');
+  resetForm();
+  setTimeout(()=>{gotoTab('sheet');renderSheet();},500);
+}
+
+function resetForm(){
+  selCat=null;selItem=null;
+  const fields=['f_sno','f_itemNo','f_desc','f_uom','f_whse','f_acct','f_proj',
+    'f_qty','f_price','f_total','f_notes','f_ord','f_prop',
+    'f_qtywhse','f_lastprice','f_afp','f_supname','f_supvat','f_supinv','f_supdate','f_svcode'];
+  fields.forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
+  document.getElementById('f_clust').value='';
+  document.getElementById('f_cost').value='';
+  document.getElementById('f_dept').value='';
+  document.getElementById('f_staff').value='GEN4';
+  document.getElementById('chipRow').style.display='none';
+  document.querySelectorAll('.ctile').forEach(t=>t.classList.remove('sel'));
+  goStep(1);
+}
+
+// ══ SHEET RENDER ══
+function switchSheet(n){
+  activeSheet=n;
+  document.getElementById('stab1').className='stab'+(n===1?' on':'');
+  document.getElementById('stab2').className='stab'+(n===2?' on':'');
+  sortCol=null;sortDir=1;renderSheet();
+}
+
+function renderSheet(){
+  const cols=activeSheet===1?SH1_COLS:SH2_COLS;
+  const data=activeSheet===1?sheet1:sheet2;
+  const q=(document.getElementById('shSrch')?.value||'').toLowerCase();
+  const cat=document.getElementById('shCat')?.value||'';
+  let rows=data.filter(r=>{
+    const mc=!cat||(r.itemNo||'').startsWith(cat);
+    const mq=!q||Object.values(r).some(v=>String(v).toLowerCase().includes(q));
+    return mc&&mq;
+  });
+  if(sortCol){
+    rows=[...rows].sort((a,b)=>{
+      const av=a[sortCol]??'',bv=b[sortCol]??'';
+      const an=parseFloat(av),bn=parseFloat(bv);
+      if(!isNaN(an)&&!isNaN(bn))return(an-bn)*sortDir;
+      return String(av).localeCompare(String(bv))*sortDir;
+    });
+  }
+  document.getElementById('rowCnt').textContent=rows.length+' rows';
+  const empty=document.getElementById('shEmpty');
+  const head=document.getElementById('shHead');
+  const body=document.getElementById('shBody');
+  head.innerHTML=`<tr>
+    <th style="min-width:32px;position:sticky;left:0;z-index:6;background:var(--s2)">#</th>
+    ${cols.map(c=>`<th style="min-width:${Math.max(c.w*7,60)}px" onclick="sortBy('${c.key}')" id="th-${c.key}">${c.hdr}</th>`).join('')}
+    <th style="min-width:70px">Actions</th>
+  </tr>`;
+  const idxMap=rows.map(r=>data.indexOf(r));
+  if(!rows.length){body.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  body.innerHTML=rows.map((r,fi)=>{
+    const oi=idxMap[fi];
+    return`<tr>
+      <td class="rn">${fi+1}</td>
+      ${cols.map(c=>`<td class="${c.auto?'ac':''}${c.isItem?' ic':''}" ondblclick="editCell(this,${oi},'${c.key}')">
+        <div class="cv">${r[c.key]??''}</div></td>`).join('')}
+      <td><div class="ra">
+        <button class="ib cp" title="Duplicate" onclick="dupRow(${oi})">⧉</button>
+        <button class="ib"    title="Delete"    onclick="delRow(${oi})">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  if(sortCol){
+    const th=document.getElementById('th-'+sortCol);
+    if(th)th.classList.add(sortDir===1?'sa':'sd');
+  }
+}
+
+function editCell(td,oi,key){
+  if(td.querySelector('input'))return;
+  const data=activeSheet===1?sheet1:sheet2;
+  const inp=document.createElement('input');
+  inp.className='ci';inp.value=data[oi][key]??'';
+  td.innerHTML='';td.appendChild(inp);
+  inp.focus();inp.select();
+  function commit(){
+    data[oi][key]=inp.value;
+    if(key==='qty'||key==='price'){
+      const q=parseFloat(data[oi].qty)||0,p=parseFloat(data[oi].price)||0;
+      data[oi].total=q&&p?(q*p).toFixed(2):'';
+    }
+    persist();renderSheet();
+  }
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape')renderSheet();});
+}
+function sortBy(col){
+  if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}renderSheet();
+}
+function delRow(oi){
+  if(!confirm('Delete this row?'))return;
+  const data=activeSheet===1?sheet1:sheet2;
+  data.splice(oi,1);persist();renderSheet();toast('Row deleted');
+}
+function dupRow(oi){
+  const data=activeSheet===1?sheet1:sheet2;
+  data.splice(oi+1,0,{...data[oi]});persist();renderSheet();toast('Row duplicated');
+}
+function clearAll(){
+  if(!confirm(`Clear ALL rows from Sheet ${activeSheet}?`))return;
+  if(activeSheet===1)sheet1=[];else sheet2=[];
+  persist();renderSheet();toast('Cleared');
+}
+
+// ══ EXPORT INVENTORY ══
+function exportSheet(){
+  if(!sheet1.length&&!sheet2.length){toast('No data to export','err');return;}
+  const wb=XLSX.utils.book_new();
+  const h1=SH1_COLS.map(c=>c.hdr);
+  const d1=sheet1.map(r=>SH1_COLS.map(c=>r[c.key]??''));
+  const ws1=XLSX.utils.aoa_to_sheet([h1,...d1]);
+  ws1['!cols']=SH1_COLS.map(c=>({wch:c.w}));
+  XLSX.utils.book_append_sheet(wb,ws1,'Inventory');
+  const h2=SH2_COLS.map(c=>c.hdr);
+  const d2=sheet2.map(r=>SH2_COLS.map(c=>r[c.key]??''));
+  const ws2=XLSX.utils.aoa_to_sheet([h2,...d2]);
+  ws2['!cols']=SH2_COLS.map(c=>({wch:c.w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Sheet1');
+  XLSX.writeFile(wb,`SHC-PH01_Inventory_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('📥 Excel exported — 2 sheets!');
+}
+
+// ══ MRS LOGIC ══
+function switchMRS(sub){
+  activeMRSSub=sub;
+  ['new','list','view'].forEach(s=>{
+    const el=document.getElementById(`mrs-${s}`);
+    const tab=document.getElementById(`mrstab-${s}`);
+    if(el)el.style.display=s===sub?'block':'none';
+    if(tab){
+      tab.className='stab'+(s===sub?' on':'');
+      if(s==='view')tab.style.display=activeMRSIdx>=0?'':'none';
+    }
+  });
+  if(sub==='list')renderMRSList();
+  if(sub==='new'){setDefaultDate();}
+}
+
+function getMRSRows(){
+  const rows=[];
+  for(let i=1;i<=10;i++){
+    const code=(document.getElementById(`mcode-${i}`)?.value||'').trim();
+    const desc=(document.getElementById(`mdesc-${i}`)?.value||'').trim();
+    const qty=(document.getElementById(`mqty-${i}`)?.value||'').trim();
+    if(code||desc||qty){
+      rows.push({
+        sr:i,
+        code,desc,
+        uom:(document.getElementById(`muom-${i}`)?.value||'').trim(),
+        qty,
+        cost:(document.getElementById(`mcost-${i}`)?.value||'').trim(),
+        remark:(document.getElementById(`mremark-${i}`)?.value||'').trim()
+      });
+    }
+  }
+  return rows;
+}
+
+function saveMRS(){
+  const no=(document.getElementById('mrs_no')?.value||'').trim();
+  const date=(document.getElementById('mrs_date')?.value||'').trim();
+  const loc=(document.getElementById('mrs_location')?.value||'').trim();
+  if(!no){toast('MRS No. is required','err');return;}
+  if(!date){toast('Date is required','err');return;}
+  if(!loc){toast('Location is required','err');return;}
+  const rows=getMRSRows();
+  if(!rows.length){toast('Add at least one item','err');return;}
+  const record={
+    id:Date.now(),
+    no,date,loc,
+    contractor:(document.getElementById('mrs_contractor')?.value||'ABCON'),
+    type:(document.getElementById('mrs_type')?.value||'Chargable'),
+    remarks:(document.getElementById('mrs_remarks')?.value||''),
+    rows,
+    sigs:{
+      req:(document.getElementById('sig_req')?.value||''),
+      fmn:(document.getElementById('sig_fmn')?.value||''),
+      eng:(document.getElementById('sig_eng')?.value||''),
+      rcv:(document.getElementById('sig_rcv')?.value||''),
+    },
+    savedAt:new Date().toISOString()
+  };
+  mrsList.push(record);
+  persist();
+  toast('✅ MRS Saved!');
+  clearMRSForm();
+  activeMRSIdx=mrsList.length-1;
+  setTimeout(()=>{switchMRS('view');showMRSPreview(activeMRSIdx);},300);
+}
+
+function clearMRSForm(){
+  ['mrs_no','mrs_date','mrs_remarks','sig_req','sig_fmn','sig_eng','sig_rcv'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('mrs_contractor').value='ABCON';
+  document.getElementById('mrs_location').value='';
+  document.getElementById('mrs_type').value='Chargable';
+  buildMRSItems();
+  setDefaultDate();
+}
+
+function previewMRS(){
+  const no=(document.getElementById('mrs_no')?.value||'').trim();
+  const date=(document.getElementById('mrs_date')?.value||'').trim();
+  const loc=(document.getElementById('mrs_location')?.value||'').trim();
+  if(!no||!date||!loc){toast('Fill No., Date and Location first','err');return;}
+  const rows=getMRSRows();
+  if(!rows.length){toast('Add at least one item','err');return;}
+  const tempRecord={
+    id:-1,no,date,loc,
+    contractor:(document.getElementById('mrs_contractor')?.value||'ABCON'),
+    type:(document.getElementById('mrs_type')?.value||'Chargable'),
+    remarks:(document.getElementById('mrs_remarks')?.value||''),
+    rows,
+    sigs:{
+      req:(document.getElementById('sig_req')?.value||''),
+      fmn:(document.getElementById('sig_fmn')?.value||''),
+      eng:(document.getElementById('sig_eng')?.value||''),
+      rcv:(document.getElementById('sig_rcv')?.value||''),
+    }
+  };
+  document.getElementById('mrsPreviewBox').innerHTML=renderMRSSlip(tempRecord);
+  const viewTab=document.getElementById('mrstab-view');
+  if(viewTab){viewTab.style.display='';viewTab.className='stab';}
+  switchMRS('view');
+}
+
+function renderMRSList(){
+  const q=(document.getElementById('mrsSearch')?.value||'').toLowerCase();
+  const filtered=mrsList.filter(r=>
+    !q||r.no.includes(q)||r.loc.toLowerCase().includes(q)||
+    r.date.includes(q)||r.contractor.toLowerCase().includes(q)
+  );
+  document.getElementById('mrsCnt').textContent=filtered.length+' slips';
+  const listEl=document.getElementById('mrsList');
+  const emptyEl=document.getElementById('mrsEmpty');
+  if(!filtered.length){listEl.innerHTML='';emptyEl.style.display='block';return;}
+  emptyEl.style.display='none';
+  const idxMap=filtered.map(r=>mrsList.indexOf(r));
+  listEl.innerHTML=filtered.map((r,fi)=>{
+    const oi=idxMap[fi];
+    const itemSummary=r.rows.slice(0,3).map(x=>x.desc||x.code).filter(Boolean).join(', ')+(r.rows.length>3?'…':'');
+    const d=r.date?new Date(r.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+    return`<div class="mrs-list-item" onclick="viewMRS(${oi})">
+      <div class="mrs-list-no">MRS #${r.no}</div>
+      <div class="mrs-list-meta">
+        <div class="mrs-list-loc">${r.loc} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.contractor}</span></div>
+        <div class="mrs-list-items">${itemSummary||'No items described'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div class="mrs-list-date">${d}</div>
+        <div class="mrs-badge" style="margin-top:4px;display:inline-block">${r.rows.length} items</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewMRS(idx){
+  activeMRSIdx=idx;
+  showMRSPreview(idx);
+  const viewTab=document.getElementById('mrstab-view');
+  if(viewTab){viewTab.style.display='';viewTab.className='stab';}
+  switchMRS('view');
+}
+
+function showMRSPreview(idx){
+  const r=mrsList[idx];
+  if(!r)return;
+  document.getElementById('mrsPreviewBox').innerHTML=renderMRSSlip(r);
+}
+
+function renderMRSSlip(r){
+  const fmtDate=d=>{
+    if(!d)return'';
+    try{const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
+    catch{return d;}
+  };
+  // Pad rows to 10
+  const rows=[...r.rows];
+  while(rows.length<10)rows.push({sr:rows.length+1,code:'',desc:'',uom:'',qty:'',cost:'',remark:''});
+  return`
+  <div class="mrs-preview" id="mrsSlipPrint">
+    <table style="margin-bottom:0">
+      <tr class="title-row">
+        <td colspan="8" style="padding:10px;font-size:14px">ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST)</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="background:#e8e8e8;font-weight:700">NO: <span style="color:#c00;font-size:13px">${r.no}</span></td>
+        <td colspan="4" style="text-align:center;font-weight:700;background:#e8e8e8;letter-spacing:1px">SITE MATERIAL REQUISITION SLIP</td>
+        <td colspan="2" style="background:#e8e8e8;font-weight:700">DATE: &nbsp;${fmtDate(r.date)}</td>
+      </tr>
+      <tr>
+        <td colspan="4"><b>CONTRACTOR NAME :</b> &nbsp;${r.contractor||'ABCON'}</td>
+        <td colspan="4" style="text-align:right;font-style:italic;color:#555">${r.type||'Chargable'}</td>
+      </tr>
+      <tr>
+        <td colspan="4"><b>LOCATION :</b> &nbsp;${r.loc}</td>
+        <td colspan="4">${r.remarks||''}</td>
+      </tr>
+      <tr class="hdr-row">
+        <td style="width:36px">SR NO.</td>
+        <td style="min-width:110px">ITEM CODE</td>
+        <td style="min-width:220px">DESCRIPTION OF MATERIAL</td>
+        <td style="width:55px">UOM</td>
+        <td style="width:55px">QTY</td>
+        <td style="width:80px">COST CODE</td>
+        <td colspan="2">REMARKS</td>
+      </tr>
+      ${rows.map((row,i)=>`<tr>
+        <td style="text-align:center;color:#666">${i+1}</td>
+        <td style="font-family:monospace;font-size:9px">${row.code||''}</td>
+        <td>${row.desc||''}</td>
+        <td style="text-align:center">${row.uom||''}</td>
+        <td style="text-align:center">${row.qty||''}</td>
+        <td style="text-align:center">${row.cost||''}</td>
+        <td colspan="2">${row.remark||''}</td>
+      </tr>`).join('')}
+      <tr class="sig-row">
+        <td colspan="2" style="padding-top:16px">
+          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Requested By</div>
+          <div style="font-size:9px">NAME: ${r.sigs?.req||''}</div>
+          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
+        </td>
+        <td colspan="2" style="padding-top:16px">
+          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Approved By Foreman</div>
+          <div style="font-size:9px">NAME: ${r.sigs?.fmn||''}</div>
+          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
+        </td>
+        <td colspan="2" style="padding-top:16px">
+          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Approved By Engg</div>
+          <div style="font-size:9px">NAME: ${r.sigs?.eng||''}</div>
+          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
+        </td>
+        <td colspan="2" style="padding-top:16px">
+          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Receiving Sign</div>
+          <div style="font-size:9px">NAME: ${r.sigs?.rcv||''}</div>
+          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+function printMRS(){
+  const box=document.getElementById('mrsPreviewBox');
+  if(!box)return;
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(`<!DOCTYPE html><html><head><title>MRS Print</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:20px;font-size:11px}
+    table{width:100%;border-collapse:collapse}
+    td,th{border:1px solid #000;padding:4px 8px;font-size:10px}
+    .title-row td{text-align:center;font-weight:700;font-size:14px;background:#1c3a6b;color:#fff}
+    .hdr-row td{background:#e8e8e8;font-weight:700;font-size:10px;text-align:center}
+    .sig-row td{border:none;padding-top:8px;font-size:9px;vertical-align:top}
+    @media print{@page{margin:10mm}}
+  </style></head><body>
+  ${box.innerHTML}
+  <script>window.onload=()=>window.print()<\/script>
+  </body></html>`);
+  w.document.close();
+}
+
+function deleteMRS(){
+  if(activeMRSIdx<0)return;
+  if(!confirm('Delete this MRS record?'))return;
+  mrsList.splice(activeMRSIdx,1);
+  activeMRSIdx=-1;
+  persist();
+  toast('MRS deleted');
+  const viewTab=document.getElementById('mrstab-view');
+  if(viewTab)viewTab.style.display='none';
+  switchMRS('list');
+}
+
+function exportMRSSingle(){
+  if(activeMRSIdx<0)return;
+  const r=mrsList[activeMRSIdx];
+  exportMRSToExcel([r],`MRS_${r.no}_${r.date}.xlsx`);
+}
+
+function exportMRSExcel(){
+  if(!mrsList.length){toast('No MRS records','err');return;}
+  exportMRSToExcel(mrsList,`SHC-PH01_MRS_All_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportMRSToExcel(records,filename){
+  const wb=XLSX.utils.book_new();
+  records.forEach(r=>{
+    const hdr=['SR NO.','ITEM CODE','DESCRIPTION OF MATERIAL','UOM','QTY','COST CODE','REMARKS'];
+    const meta=[
+      ['ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST) — SITE MATERIAL REQUISITION SLIP'],
+      [`MRS NO: ${r.no}`,`DATE: ${r.date}`,`CONTRACTOR: ${r.contractor}`,`LOCATION: ${r.loc}`],
+      [`TYPE: ${r.type}`,`REMARKS: ${r.remarks}`],
+      [],
+      hdr,
+      ...r.rows.map(row=>[row.sr,row.code,row.desc,row.uom,row.qty,row.cost,row.remark]),
+      [],
+      ['Requested By','','Approved By Foreman','','Approved By Engg','','Receiving Sign',''],
+      [r.sigs?.req||'','',r.sigs?.fmn||'','',r.sigs?.eng||'','',r.sigs?.rcv||'',''],
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(meta);
+    ws['!cols']=[{wch:8},{wch:16},{wch:40},{wch:8},{wch:8},{wch:12},{wch:30}];
+    XLSX.utils.book_append_sheet(wb,ws,`MRS-${r.no}`.slice(0,31));
+  });
+  XLSX.writeFile(wb,filename);
+  toast('📥 MRS Excel exported!');
+}
+
+// ══ DASHBOARD ══
+function renderDash(){
+  const totalItems=sheet1.length;
+  const totalQty=sheet1.reduce((s,r)=>s+(parseFloat(r.qty)||0),0);
+  const totalValue=sheet1.reduce((s,r)=>s+(parseFloat(r.total)||0),0);
+  const totalMRS=mrsList.length;
+  const mrsItems=mrsList.reduce((s,r)=>s+r.rows.filter(x=>x.code||x.desc).length,0);
+
+  // Category breakdown
+  const catBreak=CATS.map(c=>{
+    const count=sheet1.filter(r=>(r.itemNo||'').startsWith(c.p)).length;
+    return{...c,count};
+  }).filter(c=>c.count>0);
+
+  // Recent activity
+  const recent=[...sheet1].sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||'')).slice(0,5);
+  const recentMRS=[...mrsList].sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||'')).slice(0,5);
+
+  // Dept breakdown
+  const depts={};
+  sheet1.forEach(r=>{if(r.dept)depts[r.dept]=(depts[r.dept]||0)+1;});
+
+  document.getElementById('dashContent').innerHTML=`
+    <div style="margin-bottom:20px">
+      <div style="font-size:18px;font-weight:700;color:var(--txt);margin-bottom:4px">📈 Dashboard — SHC-PH01</div>
+      <div style="font-size:12px;color:var(--sub)">ABCON / BOGEST · Warehouse SHC01 · Last updated ${new Date().toLocaleString()}</div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card acc">
+        <div class="stat-label">Inventory Entries</div>
+        <div class="stat-val">${totalItems}</div>
+        <div class="stat-sub">Sheet 1 records</div>
+      </div>
+      <div class="stat-card grn">
+        <div class="stat-label">Total Quantity</div>
+        <div class="stat-val">${totalQty.toLocaleString(undefined,{maximumFractionDigits:1})}</div>
+        <div class="stat-sub">Combined units</div>
+      </div>
+      <div class="stat-card ora">
+        <div class="stat-label">Total Value (OMR)</div>
+        <div class="stat-val">${totalValue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div class="stat-sub">Info Price × Qty</div>
+      </div>
+      <div class="stat-card pur">
+        <div class="stat-label">MRS Slips</div>
+        <div class="stat-val">${totalMRS}</div>
+        <div class="stat-sub">${mrsItems} material items</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="card">
+        <div class="chdr">📦 Inventory by Category</div>
+        ${catBreak.length?catBreak.map(c=>`
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="font-size:18px">${c.i}</span>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+                <span style="font-weight:600">${c.n}</span>
+                <span style="color:var(--sub)">${c.count} entries</span>
+              </div>
+              <div style="background:var(--b1);border-radius:3px;height:5px;overflow:hidden">
+                <div style="background:var(--acc);height:100%;width:${Math.round(c.count/Math.max(totalItems,1)*100)}%;transition:width .5s"></div>
+              </div>
+            </div>
+          </div>`).join(''):'<div class="empty" style="padding:20px"><div>No inventory entries yet</div></div>'}
+      </div>
+      <div class="card">
+        <div class="chdr">🏢 Inventory by Department</div>
+        ${Object.keys(depts).length?Object.entries(depts).sort((a,b)=>b[1]-a[1]).map(([dept,cnt])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:12px;font-weight:600">${dept}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="background:var(--b1);border-radius:3px;height:4px;width:80px;overflow:hidden">
+                <div style="background:var(--grn);height:100%;width:${Math.round(cnt/totalItems*100)}%"></div>
+              </div>
+              <span style="font-family:var(--mo);font-size:11px;color:var(--acc)">${cnt}</span>
+            </div>
+          </div>`).join(''):'<div class="empty" style="padding:20px"><div>No dept data yet</div></div>'}
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="chdr" style="justify-content:space-between">
+          ⏱ Recent Inventory
+          <button class="btn bg bsm" onclick="gotoTab('sheet')">View All →</button>
+        </div>
+        ${recent.length?recent.map(r=>`
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b1)">
+            <div style="flex:1;overflow:hidden">
+              <div style="font-family:var(--mo);font-size:11px;color:var(--acc);font-weight:700">${r.itemNo}</div>
+              <div style="font-size:12px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.desc}</div>
+              <div style="font-size:10px;color:var(--sub);margin-top:2px">${r.dept||'—'} · ${r.clust||'—'}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-family:var(--mo);font-size:12px;color:var(--grn)">${r.qty||0} ${r.uom}</div>
+              ${r.total?`<div style="font-size:10px;color:var(--sub)">OMR ${r.total}</div>`:''}
+            </div>
+          </div>`).join(''):'<div class="empty" style="padding:20px"><div>No entries yet</div></div>'}
+      </div>
+      <div class="card">
+        <div class="chdr" style="justify-content:space-between">
+          📋 Recent MRS
+          <button class="btn bg bsm" onclick="gotoTab('mrs');switchMRS(\'list\')">View All →</button>
+        </div>
+        ${recentMRS.length?recentMRS.map((r,i)=>`
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b1);cursor:pointer" onclick="gotoTab('mrs');viewMRS(${mrsList.indexOf(r)})">
+            <div style="font-family:var(--mo);font-size:12px;color:var(--pur);font-weight:700;min-width:50px">#${r.no}</div>
+            <div style="flex:1;overflow:hidden">
+              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.loc}</div>
+              <div style="font-size:10px;color:var(--sub)">${r.date} · ${r.rows.filter(x=>x.code||x.desc).length} items</div>
+            </div>
+            <span class="mrs-badge">${r.type}</span>
+          </div>`).join(''):'<div class="empty" style="padding:20px"><div>No MRS records yet</div></div>'}
+      </div>
+    </div>`;
+}
+
+// ══ TAB NAV ══
+function gotoTab(t){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(n=>n.classList.remove('on'));
+  document.getElementById('pg-'+t).classList.add('on');
+  document.getElementById('tab-'+t).classList.add('on');
+  if(t==='sheet'){switchSheet(activeSheet);}
+  if(t==='mrs'){switchMRS(activeMRSSub==='view'&&activeMRSIdx>=0?'view':activeMRSSub==='list'?'list':'new');}
+  if(t==='dash'){renderDash();}
+}
+
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.background=type==='err'?'var(--red)':'var(--grn)';
+  el.style.color=type==='err'?'#fff':'#0d1117';
+  el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',2800);
+}
+</script>
+</body>
+</html>
