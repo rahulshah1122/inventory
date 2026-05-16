@@ -315,7 +315,14 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
         <div class="fg"><div class="fl">Cost Code</div>
           <select id="f_cost"><option value="">-- Select --</option></select></div>
         <div class="fg"><div class="fl">Staff Name / Assets</div>
-          <select id="f_staff"></select></div>
+          <div style="position:relative">
+            <select id="f_staff" onchange="onStaffChange('f_staff','f_staff_info')"></select>
+          </div>
+          <div id="f_staff_info" style="margin-top:5px;padding:5px 9px;background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.14);border-radius:4px;font-size:10px;display:none;gap:12px;align-items:center">
+            <span style="font-family:var(--mo);color:var(--grn);font-weight:700" id="f_staff_code"></span>
+            <span style="color:var(--sub)" id="f_staff_rule"></span>
+          </div>
+        </div>
         <div class="fg full"><div class="fl">Item Details / Notes</div>
           <textarea id="f_notes" placeholder="Specifications, serial numbers, remarks…"></textarea></div>
       </div>
@@ -367,39 +374,91 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 <!-- ═══════════════════════════ SHEET PAGE ═══════════════════════════ -->
 <div class="pg" id="pg-sheet">
 <div class="wrap">
+
+  <!-- Sub-tabs -->
   <div class="stabs">
-    <div class="stab on" id="stab1" onclick="switchSheet(1)">📋 Sheet 1 — Inventory (17 cols)</div>
-    <div class="stab"    id="stab2" onclick="switchSheet(2)">📋 Sheet 2 — MEP Inventory (25 cols)</div>
+    <div class="stab on" id="shtab-slips" onclick="switchSheetSub('slips')">📋 MRS Slips</div>
+    <div class="stab"    id="shtab-table" onclick="switchSheetSub('table')">📊 Raw Table</div>
   </div>
-  <div class="sa">
-    <div class="sf">
-      <input style="width:230px" type="text" id="shSrch" placeholder="🔍 Search all columns…" oninput="renderSheet()">
-      <select style="width:148px" id="shCat" onchange="renderSheet()">
-        <option value="">All Categories</option>
-        <option value="CIV">CIV — Civil</option>
-        <option value="GEN">GEN — General</option>
-        <option value="MEP">MEP — MEP</option>
-        <option value="HVA">HVA — HVAC</option>
-        <option value="TOO">TOO — Tools</option>
-        <option value="MEC">MEC — Mech</option>
-        <option value="SER">SER — Services</option>
-      </select>
-      <span class="cb" id="rowCnt">0 rows</span>
+
+  <!-- ── SLIPS VIEW ── -->
+  <div id="sh-slips">
+    <!-- Filter bar -->
+    <div class="sa" style="flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div class="sf" style="flex-wrap:wrap;gap:8px;align-items:center">
+        <input style="width:210px" type="text" id="slipSrch" placeholder="🔍 Search slip / contractor…" oninput="renderSlipList()">
+        <span style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Date:</span>
+        <input type="date" id="slipFrom" style="width:136px" onchange="renderSlipList()" title="From">
+        <span style="color:var(--sub);font-size:12px">→</span>
+        <input type="date" id="slipTo"   style="width:136px" onchange="renderSlipList()" title="To">
+        <button class="btn bg bsm" onclick="document.getElementById('slipFrom').value='';document.getElementById('slipTo').value='';renderSlipList()">✕</button>
+        <span class="cb" id="slipCnt">0 slips</span>
+      </div>
+      <button class="btn be bsm" id="exportSelBtn" onclick="exportSelectedSlip()" style="display:none">⬇ Export Selected — Both Sheets</button>
     </div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <button class="btn bg bsm" onclick="gotoTab('form')">➕ Add</button>
-      <button class="btn be bsm" onclick="exportSheet()">⬇ Export Excel</button>
-      <button class="btn bd bsm" onclick="clearAll()">🗑 Clear Sheet</button>
+
+    <!-- Slip cards -->
+    <div id="slipList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div class="empty" id="slipEmpty" style="display:none">
+      <div class="ei">📋</div>
+      <div>No MRS slips found.</div>
+    </div>
+
+    <!-- Expanded slip detail panel -->
+    <div id="slipDetail" style="display:none;margin-top:16px">
+      <div class="card" style="border-color:var(--acc)">
+        <div class="chdr" style="justify-content:space-between">
+          <span id="slipDetailTitle">MRS Details</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--sub)">Export date filter:</span>
+            <input type="date" id="exportFrom" style="width:136px" title="From date (optional)">
+            <span style="color:var(--sub);font-size:12px">→</span>
+            <input type="date" id="exportTo"   style="width:136px" title="To date (optional)">
+            <button class="btn be" onclick="exportSelectedSlip()">⬇ Export Both Sheets</button>
+          </div>
+        </div>
+        <div id="slipDetailBody"></div>
+      </div>
     </div>
   </div>
-  <div class="shwrap"><table class="sht" id="shTbl">
-    <thead id="shHead"></thead>
-    <tbody id="shBody"></tbody>
-  </table></div>
-  <div class="empty" id="shEmpty" style="display:none">
-    <div class="ei">📋</div>
-    <div>No records. <a href="#" onclick="gotoTab('form')" style="color:var(--acc)">Add entry →</a></div>
+
+  <!-- ── RAW TABLE VIEW ── -->
+  <div id="sh-table" style="display:none">
+    <div class="stabs" style="margin-bottom:10px">
+      <div class="stab on" id="stab1" onclick="switchSheet(1)">📋 Sheet 1 — Inventory (17 cols)</div>
+      <div class="stab"    id="stab2" onclick="switchSheet(2)">📋 Sheet 2 — MEP Inventory (25 cols)</div>
+    </div>
+    <div class="sa">
+      <div class="sf">
+        <input style="width:230px" type="text" id="shSrch" placeholder="🔍 Search all columns…" oninput="renderSheet()">
+        <select style="width:148px" id="shCat" onchange="renderSheet()">
+          <option value="">All Categories</option>
+          <option value="CIV">CIV — Civil</option>
+          <option value="GEN">GEN — General</option>
+          <option value="MEP">MEP — MEP</option>
+          <option value="HVA">HVA — HVAC</option>
+          <option value="TOO">TOO — Tools</option>
+          <option value="MEC">MEC — Mech</option>
+          <option value="SER">SER — Services</option>
+        </select>
+        <span class="cb" id="rowCnt">0 rows</span>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn bg bsm" onclick="gotoTab('form')">➕ Add</button>
+        <button class="btn be bsm" onclick="exportSheet()">⬇ Export Excel</button>
+        <button class="btn bd bsm" onclick="clearAll()">🗑 Clear Sheet</button>
+      </div>
+    </div>
+    <div class="shwrap"><table class="sht" id="shTbl">
+      <thead id="shHead"></thead>
+      <tbody id="shBody"></tbody>
+    </table></div>
+    <div class="empty" id="shEmpty" style="display:none">
+      <div class="ei">📋</div>
+      <div>No records. <a href="#" onclick="gotoTab('form')" style="color:var(--acc)">Add entry →</a></div>
+    </div>
   </div>
+
 </div>
 </div>
 
@@ -411,7 +470,6 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
   <div class="stabs" id="mrsTabs">
     <div class="stab on" id="mrstab-new"  onclick="switchMRS('new')">📝 New MRS</div>
     <div class="stab"    id="mrstab-list" onclick="switchMRS('list')">📂 MRS Records</div>
-    <div class="stab"    id="mrstab-view" onclick="switchMRS('view')" id="mrstab-view" style="display:none">👁 Preview</div>
   </div>
 
   <!-- NEW MRS -->
@@ -433,9 +491,17 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 
       <div class="fg" style="margin-bottom:13px">
         <div class="fl">Contractor Name <span class="r">*</span></div>
-        <select id="mrs_contractor">
-          <option value="">-- Select Contractor --</option>
-        </select>
+        <div style="position:relative">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none;font-size:13px">🏢</span>
+          <input id="mrs_contractor" placeholder="Type or select contractor..." autocomplete="off"
+            oninput="contractorSearch()" onblur="setTimeout(closeContractorDd,200)"
+            onkeydown="contractorDdKey(event)" style="padding-left:30px">
+          <div class="ddl" id="contractorDd" style="display:none"></div>
+        </div>
+        <div id="contractor_info" style="margin-top:5px;padding:6px 10px;background:rgba(68,147,248,.06);border:1px solid rgba(68,147,248,.18);border-radius:4px;font-size:11px;display:none;gap:12px;align-items:center">
+          <span style="font-family:var(--mo);color:var(--acc);font-weight:700" id="contractor_code"></span>
+          <span id="contractor_balance" style="font-size:10px"></span>
+        </div>
       </div>
 
       <div class="fg2" style="margin-bottom:13px">
@@ -460,14 +526,22 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
         </div>
         <div class="fg">
           <div class="fl">Staff Name / Assets</div>
-          <select id="mrs_staff">
-            <option value="">-- Select --</option>
-          </select>
+          <div style="position:relative">
+            <input id="mrs_staff" placeholder="Search staff name or code…" autocomplete="off"
+              oninput="staffSearch()" onblur="setTimeout(closeStaffDd,200)"
+              onkeydown="staffDdKey(event)">
+            <div class="ddl" id="staffDd" style="display:none"></div>
+          </div>
+          <div id="mrs_staff_info" style="margin-top:5px;padding:5px 9px;background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.14);border-radius:4px;font-size:10px;display:none;gap:10px;align-items:center;flex-wrap:wrap">
+            <span style="font-family:var(--mo);color:var(--grn);font-weight:700" id="mrs_staff_code"></span>
+            <span style="color:var(--sub)" id="mrs_staff_rule">Dist. Rule: —</span>
+            <span style="color:var(--sub)" id="mrs_staff_fathercc"></span>
+          </div>
         </div>
       </div>
 
       <!-- Items table matching the sketch: S.M. | Item Code | Description of Material | UOM | Qty -->
-      <div class="sectlabel">📦 Material Items (up to 10 rows)</div>
+      <div class="sectlabel">📦 Material Items</div>
       <div style="overflow-x:auto">
       <table class="mrs-table" id="mrsItemTable">
         <thead>
@@ -483,6 +557,9 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
         <tbody id="mrsItemBody"></tbody>
       </table>
       </div>
+      <div style="margin-top:8px">
+        <button class="btn bg bsm" onclick="addMRSRow()">➕ Add Row</button>
+      </div>
 
       <div class="brow">
         <button class="btn bg" onclick="clearMRSForm()">🗑 Clear</button>
@@ -492,16 +569,22 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
     </div>
   </div>
 
+
   <!-- MRS LIST -->
   <div id="mrs-list" style="display:none">
-    <div class="sa">
-      <div class="sf">
+    <div class="sa" style="flex-wrap:wrap;gap:10px">
+      <div class="sf" style="flex-wrap:wrap;gap:8px;align-items:center">
         <input style="width:220px" type="text" id="mrsSearch" placeholder="🔍 Search MRS records…" oninput="renderMRSList()">
+        <span style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Date range:</span>
+        <input type="date" id="mrsDateFrom" style="width:140px" onchange="renderMRSList()" title="From date">
+        <span style="color:var(--sub);font-size:12px">→</span>
+        <input type="date" id="mrsDateTo" style="width:140px" onchange="renderMRSList()" title="To date">
+        <button class="btn bg bsm" onclick="document.getElementById('mrsDateFrom').value='';document.getElementById('mrsDateTo').value='';renderMRSList()">✕ Clear</button>
         <span class="cb" id="mrsCnt">0 slips</span>
       </div>
       <div style="display:flex;gap:7px">
         <button class="btn bg bsm" onclick="switchMRS('new')">➕ New MRS</button>
-        <button class="btn be bsm" onclick="exportMRSExcel()">⬇ Export All MRS</button>
+        <button class="btn be bsm" onclick="exportFilteredMRSToSheets()">⬇ Export to Sheet 1 &amp; 2</button>
       </div>
     </div>
     <div class="mrs-list" id="mrsList"></div>
@@ -509,19 +592,6 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
       <div class="ei">📋</div>
       <div>No MRS records yet. <a href="#" onclick="switchMRS('new')" style="color:var(--acc)">Create one →</a></div>
     </div>
-  </div>
-
-  <!-- MRS PREVIEW -->
-  <div id="mrs-view" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <button class="btn bg bsm" onclick="switchMRS('list')">← Back to List</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn bpur bsm" onclick="printMRS()">🖨 Print</button>
-        <button class="btn be bsm" onclick="exportMRSSingle()">⬇ Export Excel</button>
-        <button class="btn bd bsm" onclick="deleteMRS()">🗑 Delete</button>
-      </div>
-    </div>
-    <div id="mrsPreviewBox"></div>
   </div>
 
 </div>
@@ -714,13 +784,12 @@ function applyScanned(){
     for(let o of cc.options){if(o.value===scannedData.costcode){cc.value=scannedData.costcode;break;}}
   }
   if(scannedData.staff){
-    const st=document.getElementById('mrs_staff');
-    for(let o of st.options){if(o.value===scannedData.staff||o.textContent===scannedData.staff){st.value=o.value;break;}}
+    document.getElementById('mrs_staff').value=scannedData.staff;
   }
-  // Rebuild rows with scanned items
-  buildMRSItems();
+  // Rebuild rows with enough rows for scanned items
   const items=scannedData.items||[];
-  items.slice(0,10).forEach((it,i)=>{
+  buildMRSItems(Math.max(items.length,10));
+  items.forEach((it,i)=>{
     const r=i+1;
     if(document.getElementById(`mcode-${r}`)) document.getElementById(`mcode-${r}`).value=it.code||'';
     if(document.getElementById(`mdesc-${r}`)) document.getElementById(`mdesc-${r}`).value=it.desc||'';
@@ -741,13 +810,493 @@ function applyScanned(){
 // ══════════════════════════════════════════════════════════════════
 const ITEMS=[{"sno":"1","itemNo":"CIV-100012","desc":"WOODEN SCAFOLDING BOARD","uom":"PCs","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"2","itemNo":"CIV-100016","desc":"NITOTILE GP - POLYMER MODIFIED TILE ADHESIVE (25 KG/BAG) YIELD - 18.1 LITERS / BAG","uom":"BAG","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"3","itemNo":"CIV-100029","desc":"MASKING TAPE 2\"","uom":"BOX","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"4","itemNo":"CIV-100031","desc":"TILE TRIM SQUARE TYPE 12.5 mm X 2.70 MTR, SS316, BRUSHED FINISH","uom":"MTR","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"5","itemNo":"CIV-100039","desc":"POLYETHYLENE FILLER BOARD 20 (WHITE)","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"6","itemNo":"CIV-100042","desc":"WIRE NAIL 4\"","uom":"kg","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"7","itemNo":"CIV-100045","desc":"STEEL / CONCRETE NAIL 2\"","uom":"kg","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"8","itemNo":"CIV-100046","desc":"POLYTHENE SHEET - 500 GAUGE","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"9","itemNo":"CIV-100049","desc":"DOTTED GLOVES - GOOD QUALITY","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"10","itemNo":"CIV-100050","desc":"STEEL CUTTING DISC 4.5\" (1  mm)","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"11","itemNo":"CIV-100051","desc":"PLASTERING MESH SS 304 (COIL MESH) (200 mm X 50MTR)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"12","itemNo":"CIV-100066","desc":"CEMENT OPC - 50 KG / BAG","uom":"BAG","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"13","itemNo":"CIV-100068","desc":"READY MIXED CONCRETE C20/20, OPC","uom":"M3","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"62","itemNo":"CIV-100490","desc":"CURRING PIPE (WATER HOSE) 1\"","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"63","itemNo":"CIV-100493","desc":"BRC MESH (GRADE A393 - 10  mm THICKNESS)","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"84","itemNo":"CIV-100872","desc":"REBAR 20 mm x 12MTR","uom":"TON","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"85","itemNo":"CIV-100873","desc":"REBAR 25 mm x 12 MTR","uom":"TON","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"196","itemNo":"GEN-100014","desc":"BRACING TUBE 6.00 MTR","uom":"PCs","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"197","itemNo":"GEN-100048","desc":"GREEN NET MESH (SIZE : 3 X 50 MTR. 80 % GREEN)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"291","itemNo":"GEN-101489","desc":"Diesel Fuel","uom":"Liters","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"329","itemNo":"MEP-100017","desc":"NUMBERING FERRULE 0-9, 2.5SP mm","uom":"PKT","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"330","itemNo":"MEP-100018","desc":"ALPHABET FERRULES R, Y, B, F, C, D, T, E, X,G - 2.5 SQ mm","uom":"PKT","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"333","itemNo":"MEP-100021","desc":"INSULATION TAPE RED","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"334","itemNo":"MEP-100023","desc":"INSULATION TAPE YELLOW","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"335","itemNo":"MEP-100024","desc":"INSULATION TAPE BLUE","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"557","itemNo":"MEP-100656","desc":"2.5  mm2 SINGLE CORE WIRE - RED (BRAND NAME : NCF, OMAN)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"558","itemNo":"MEP-100657","desc":"2.5  mm2 SINGLE CORE WIRE - YELLOW  (BRAND NAME : NCF, OMAN)","uom":"ROLL","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"894","itemNo":"TOO-100003","desc":"C LOCK STANDARD 1.00 MTR","uom":"PCs","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"900","itemNo":"TOO-100047","desc":"KNIPEX CUTTER 8\"","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"905","itemNo":"TOO-100603","desc":"MEASURING TAPE - 5  MTR","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"311","itemNo":"HVA-100052","desc":"HEXAGON HEAD BOLT , DIN 933, M8 X 30  mm GALVANISED","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"313","itemNo":"HVA-100437","desc":"RUBBER LINED SPLIT CLAMP (63 - 66  mm) - PIPE OD 63   mm","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"328","itemNo":"MEC-101193","desc":"TUBLESS TYRE 10-16.5","uom":"NOS","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"},{"sno":"888","itemNo":"SER-101476","desc":"Rental of Formworks for 10-59 Part 3","uom":"Months","whse":"SHC01","acct":"501102","proj":"SHC-PH01","staff":"GEN4"}];
 
-const STAFF=[{"code":"GEN4","name":"GEN4 — General"},{"code":"46","name":"SIBY MATHEW"},{"code":"48","name":"CHUNILAL VALJOR RAM"},{"code":"49","name":"RAM SUNDER"},{"code":"62","name":"MUJAHRUDEN SHAH"},{"code":"80","name":"KUNJU KUNJU RAMESH KUMAR"},{"code":"81","name":"ARSHAD HAMEED SIDDIQUI"},{"code":"85","name":"Pradeep Kumar"},{"code":"87","name":"YUVRAJ UTTAM KUTE"},{"code":"94","name":"LAXMAN VISHWAKARMA"},{"code":"126","name":"RAJESH THAKUR"},{"code":"633","name":"PETER SAMSON DERRICK"},{"code":"637","name":"SAQIB JAVED"},{"code":"638","name":"MUZAFFAR IQBAL HUSSAIN"},{"code":"639","name":"MUHAMMAD RAMZAN"},{"code":"645","name":"ALI RAZA KHALID"},{"code":"666","name":"PALASH PATRA"},{"code":"680","name":"SANDEEP KUMAR"},{"code":"703","name":"SEN MATHEW PHILIP"},{"code":"704","name":"BISHNU BAHADUR KARKI"},{"code":"808","name":"PRAMOD KOTTARAM"},{"code":"GEN4","name":"GENERAL"}];
+const STAFF=[
+{"code":"GEN4","distRule":"GEN4","name":"GENERAL","fatherCC":""},
+{"code":"46","distRule":"46","name":"SIBY MATHEW","fatherCC":""},
+{"code":"48","distRule":"48","name":"CHUNILAL VALJOR RAM","fatherCC":""},
+{"code":"49","distRule":"49","name":"RAM SUNDER","fatherCC":""},
+{"code":"62","distRule":"62","name":"MUJAHRUDEN SHAH","fatherCC":""},
+{"code":"80","distRule":"80","name":"KUNJU KUNJU RAMESH KUMAR","fatherCC":""},
+{"code":"81","distRule":"81","name":"ARSHAD HAMEED SIDDIQUI","fatherCC":""},
+{"code":"85","distRule":"85","name":"Pradeep Kumar","fatherCC":""},
+{"code":"87","distRule":"87","name":"YUVRAJ UTTAM KUTE","fatherCC":""},
+{"code":"94","distRule":"94","name":"LAXMAN VISHWAKARMA","fatherCC":""},
+{"code":"106","distRule":"106","name":"Saravanan Muniyasamy","fatherCC":""},
+{"code":"116WK","distRule":"116WK","name":"116 WK-SUZUKI-APV sallon car","fatherCC":""},
+{"code":"1235YB","distRule":"1235YB","name":"1235 YB-GORICA-Tipperbox 45cbm","fatherCC":""},
+{"code":"1237YB","distRule":"1237YB","name":"1237 YB-RENAULT-Prime Mover","fatherCC":""},
+{"code":"1238YB","distRule":"1238YB","name":"1238 YB-RENAULT- Prime Mover","fatherCC":""},
+{"code":"1239YB","distRule":"1239YB","name":"1239 YB-GORICA-Tipperbox 45cbm","fatherCC":""},
+{"code":"126","distRule":"126","name":"RAJESH THAKUR","fatherCC":""},
+{"code":"1438BA","distRule":"1438BA","name":"1438 BA-FAW-CHINA-Tipper 18cbm","fatherCC":""},
+{"code":"156","distRule":"156","name":"UNNIKRISHNAN NAYAR CHELLAPPAN","fatherCC":""},
+{"code":"1619DK","distRule":"1619DK","name":"1619 DK-FAW-CHINA-Tipper 18cbm","fatherCC":""},
+{"code":"1719MR","distRule":"1719MR","name":"1719 MR-ISUZU-CANTER-3TON","fatherCC":""},
+{"code":"183","distRule":"183","name":"Ghalib Said Hedeb Al Hamhmi","fatherCC":""},
+{"code":"186","distRule":"186","name":"Ahmed Saif Said Al Khusaibi","fatherCC":""},
+{"code":"1958ML","distRule":"1958ML","name":"1958 ML-ZOOMLION-CRANE 60TON","fatherCC":""},
+{"code":"208","distRule":"208","name":"Muhammad Khalid Adulaziz Al","fatherCC":""},
+{"code":"2088","distRule":"2088","name":"2088-FAW-CHINA-Tipper 18cbm","fatherCC":""},
+{"code":"2142WB","distRule":"2142WB","name":"2142 WB-ZOOMLION-CRANE 60TON","fatherCC":""},
+{"code":"2184WK","distRule":"2184WK","name":"2184WK-TATA-WATERTanker5000GLN","fatherCC":""},
+{"code":"2207WK","distRule":"2207WK","name":"2207 WK-MAN-Tipper 18cbm","fatherCC":""},
+{"code":"2219WK","distRule":"2219WK","name":"2219 WK-MAN-Tipper 18cbm","fatherCC":""},
+{"code":"2363mm","distRule":"2363mm","name":"2363 mm-Toyota-Pickup 1Ton","fatherCC":""},
+{"code":"2365mm","distRule":"2365mm","name":"2365 mm-Nissan-Pickup 1Ton","fatherCC":""},
+{"code":"25464","distRule":"25464","name":"25464-KIA-Kia optima","fatherCC":""},
+{"code":"28488","distRule":"28488","name":"28488-SUZUKI-APV sallon car","fatherCC":""},
+{"code":"2859LB","distRule":"2859LB","name":"2859 LB-ZOOMLION-Excav(ZE370E)","fatherCC":""},
+{"code":"3229ML","distRule":"3229ML","name":"3229 ML-VOLVO-Tipper 18cbm","fatherCC":""},
+{"code":"326","distRule":"326","name":"Sami Khasib Khadoum","fatherCC":""},
+{"code":"3347RK","distRule":"3347RK","name":"3347 RK-XMAG-MotorGrader-215HP","fatherCC":""},
+{"code":"3348YB","distRule":"3348YB","name":"3348 YB-ATLAS-Tipper box 45cbm","fatherCC":""},
+{"code":"3360ML","distRule":"3360ML","name":"3360 ML-HINO-Haib 10T","fatherCC":""},
+{"code":"3422LH","distRule":"3422LH","name":"3422 LH-ZOOMLION-Excav(ZE370E)","fatherCC":""},
+{"code":"3451T","distRule":"3451T","name":"3451 T-Toyota-Saloon corolla","fatherCC":""},
+{"code":"3646WB","distRule":"3646WB","name":"3646 WB-JTR-JORDAN-Flatbed","fatherCC":""},
+{"code":"3753WK","distRule":"3753WK","name":"3753 WK-TATA-BUS 66 SEAT","fatherCC":""},
+{"code":"3755WB","distRule":"3755WB","name":"3755 WB-Toyota-MINI CAB","fatherCC":""},
+{"code":"4206HK","distRule":"4206HK","name":"4206 HK-HINO-Canter 3Ton-WATER","fatherCC":""},
+{"code":"4380MB","distRule":"4380MB","name":"4380 MB-ZOOMLION-CRANE 60TON","fatherCC":""},
+{"code":"4707HK","distRule":"4707HK","name":"4707 HK-RENAULT-Concrete Pump","fatherCC":""},
+{"code":"615DK","distRule":"615DK","name":"615 DK-MAN-Tipper 18cbm","fatherCC":""},
+{"code":"6180BM","distRule":"6180BM","name":"6180 BM-JCB-Backhoe Loader","fatherCC":""},
+{"code":"633","distRule":"633","name":"PETER SAMSON DERRICK VONGUNSTE","fatherCC":""},
+{"code":"637","distRule":"637","name":"SAQIB JAVED","fatherCC":""},
+{"code":"638","distRule":"638","name":"MUZAFFAR IQBAL HUSSAIN","fatherCC":""},
+{"code":"639","distRule":"639","name":"MUHAMMAD RAMZAN","fatherCC":""},
+{"code":"645","distRule":"645","name":"ALI RAZA KHALID","fatherCC":""},
+{"code":"649","distRule":"649","name":"MUDASSAR HUSSAIN AKASH","fatherCC":""},
+{"code":"652","distRule":"652","name":"RAZAQ KHAN","fatherCC":""},
+{"code":"658","distRule":"658","name":"Amur Rashid Saif Al Shabibi","fatherCC":""},
+{"code":"661","distRule":"661","name":"Aseel Jamil Khadoom Al Noobi","fatherCC":""},
+{"code":"666","distRule":"666","name":"PALASH PATRA","fatherCC":""},
+{"code":"669","distRule":"669","name":"Tariq Ramadhan Yousuf Al Balu","fatherCC":""},
+{"code":"673","distRule":"673","name":"BILAL AHMAD","fatherCC":""},
+{"code":"674","distRule":"674","name":"AMIR NISAR","fatherCC":""},
+{"code":"675","distRule":"675","name":"AZHAR MUBASHAR","fatherCC":""},
+{"code":"680","distRule":"680","name":"SANDEEP KUMAR","fatherCC":""},
+{"code":"681","distRule":"681","name":"MUHAMMAD HAIDER AMEEN","fatherCC":""},
+{"code":"682","distRule":"682","name":"Jasim Mohamed Salim AL Balushi","fatherCC":""},
+{"code":"683","distRule":"683","name":"TALHA ASHIQ","fatherCC":""},
+{"code":"684","distRule":"684","name":"ADEEL AHMED","fatherCC":""},
+{"code":"685","distRule":"685","name":"KASHIF IQBAL","fatherCC":""},
+{"code":"686","distRule":"686","name":"SHAUKAT HUSSAIN","fatherCC":""},
+{"code":"687","distRule":"687","name":"Faisal Ahmed Abdullah AL Balus","fatherCC":""},
+{"code":"692","distRule":"692","name":"TAHIR MAHMOOD","fatherCC":""},
+{"code":"693","distRule":"693","name":"LAHIRU SAMINDA WIJETHUNGA","fatherCC":""},
+{"code":"694","distRule":"694","name":"MOHAMED JAWED TARIQ","fatherCC":""},
+{"code":"695","distRule":"695","name":"SAFI MOHAMMED LILGAR","fatherCC":""},
+{"code":"696","distRule":"696","name":"ASHIK KHAN","fatherCC":""},
+{"code":"6964TA","distRule":"6964TA","name":"6964 TA-KIA-Kia Sportage","fatherCC":""},
+{"code":"697DK","distRule":"697DK","name":"697 DK-LELAND-BUS 66 SEAT","fatherCC":""},
+{"code":"698","distRule":"698","name":"ASHISH BISWAS","fatherCC":""},
+{"code":"699","distRule":"699","name":"MAHABUB ALAM","fatherCC":""},
+{"code":"702","distRule":"702","name":"AHMED ABDULLA RAMDAN","fatherCC":""},
+{"code":"703","distRule":"703","name":"SEN MATHEW PHILIP","fatherCC":""},
+{"code":"704","distRule":"704","name":"BISHNU BAHADUR KARKI","fatherCC":""},
+{"code":"707","distRule":"707","name":"TAJAMOOL","fatherCC":""},
+{"code":"710","distRule":"710","name":"FAZAL ABDULSALM PATHAN","fatherCC":""},
+{"code":"711","distRule":"711","name":"JOHN JEBA KUMAR","fatherCC":""},
+{"code":"7127RK","distRule":"7127RK","name":"7127 RK-TATA-BUS 66 SEAT","fatherCC":""},
+{"code":"713","distRule":"713","name":"VINODH PALLIYIL","fatherCC":""},
+{"code":"714","distRule":"714","name":"ABDULLRASHEED","fatherCC":""},
+{"code":"715","distRule":"715","name":"ZEESHAN ASHRAF","fatherCC":""},
+{"code":"716","distRule":"716","name":"MUHAMMAD FUZEL ANSARI","fatherCC":""},
+{"code":"717","distRule":"717","name":"DEEPU","fatherCC":""},
+{"code":"719","distRule":"719","name":"ASLAM KHAN DAYAM KHAN","fatherCC":""},
+{"code":"7207ML","distRule":"7207ML","name":"7207 ML-VOLVO-Tipper 18cbm","fatherCC":""},
+{"code":"721","distRule":"721","name":"MUHAMMAD KAMRAN","fatherCC":""},
+{"code":"722","distRule":"722","name":"MOHAMMAD FAROOQ","fatherCC":""},
+{"code":"723","distRule":"723","name":"SICANDAR RABBANI","fatherCC":""},
+{"code":"724","distRule":"724","name":"MUSADDAQ MASOOD","fatherCC":""},
+{"code":"725","distRule":"725","name":"MUBEEN RANA","fatherCC":""},
+{"code":"726","distRule":"726","name":"MUHAMMAD HAMEED","fatherCC":""},
+{"code":"727","distRule":"727","name":"MOHAMMAD AHMAD","fatherCC":""},
+{"code":"728","distRule":"728","name":"MUHAMMAD MAZHAR","fatherCC":""},
+{"code":"729","distRule":"729","name":"GULAM TAQI","fatherCC":""},
+{"code":"730","distRule":"730","name":"MALIK DANISH","fatherCC":""},
+{"code":"731","distRule":"731","name":"ABDUL BASIT KAMAL","fatherCC":""},
+{"code":"732","distRule":"732","name":"ZAHEER HUSSAIN","fatherCC":""},
+{"code":"733","distRule":"733","name":"MOHAMMAD YOUSUF","fatherCC":""},
+{"code":"734","distRule":"734","name":"ASLAM","fatherCC":""},
+{"code":"735","distRule":"735","name":"SALIM ALI","fatherCC":""},
+{"code":"736","distRule":"736","name":"MUHAMMAD MUDASSIR ABDULLA","fatherCC":""},
+{"code":"738","distRule":"738","name":"RAJU NAYAK","fatherCC":""},
+{"code":"739","distRule":"739","name":"JAVED KHAN","fatherCC":""},
+{"code":"740","distRule":"740","name":"OM PRAKESH","fatherCC":""},
+{"code":"741","distRule":"741","name":"MUHAMMAD NAZIK","fatherCC":""},
+{"code":"742","distRule":"742","name":"HAIDAR ALI","fatherCC":""},
+{"code":"743","distRule":"743","name":"ZAIGAM ABBAS","fatherCC":""},
+{"code":"744","distRule":"744","name":"AKMAL KHAN","fatherCC":""},
+{"code":"745","distRule":"745","name":"ARSALAN","fatherCC":""},
+{"code":"746","distRule":"746","name":"MOHAMMAD IMRAN","fatherCC":""},
+{"code":"747","distRule":"747","name":"TANVEER ABBAS","fatherCC":""},
+{"code":"748","distRule":"748","name":"MOHAMMAD MOHSIN","fatherCC":""},
+{"code":"749","distRule":"749","name":"MOHAMMAD ANAS","fatherCC":""},
+{"code":"750","distRule":"750","name":"QALANDAR MASOUD","fatherCC":""},
+{"code":"751","distRule":"751","name":"MUHAMMAD SULIMAN","fatherCC":""},
+{"code":"752","distRule":"752","name":"ASIM NAHEED","fatherCC":""},
+{"code":"753","distRule":"753","name":"LICHMAN NAYAK","fatherCC":""},
+{"code":"754","distRule":"754","name":"SHER MOHAMMAD","fatherCC":""},
+{"code":"755","distRule":"755","name":"IQBAL HUMEED ALI","fatherCC":""},
+{"code":"756","distRule":"756","name":"SHIBU CT","fatherCC":""},
+{"code":"757","distRule":"757","name":"HANUMAN PRASAD","fatherCC":""},
+{"code":"7575MR","distRule":"7575MR","name":"7575 MR-XMAG-MotorGrader-215HP","fatherCC":""},
+{"code":"7579LB","distRule":"7579LB","name":"7579 LB-ZOOMLION-Excav(ZE370E)","fatherCC":""},
+{"code":"7581AK","distRule":"7581AK","name":"7581 AK-XMAG-Shovel","fatherCC":""},
+{"code":"759","distRule":"759","name":"SAQIB HAMEED","fatherCC":""},
+{"code":"760","distRule":"760","name":"ABDUL RAHMAN","fatherCC":""},
+{"code":"7608AK","distRule":"7608AK","name":"7608 AK-XMAG-Shovel","fatherCC":""},
+{"code":"7609AK","distRule":"7609AK","name":"7609 AK-XMAG-Shovel","fatherCC":""},
+{"code":"761","distRule":"761","name":"HIRALAL","fatherCC":""},
+{"code":"762","distRule":"762","name":"NANDU SINGH","fatherCC":""},
+{"code":"764","distRule":"764","name":"MUHAMMAD RAPHIK","fatherCC":""},
+{"code":"766","distRule":"766","name":"FARUKHA","fatherCC":""},
+{"code":"767","distRule":"767","name":"SURESH KUMAR","fatherCC":""},
+{"code":"768","distRule":"768","name":"MUKASH NAYAK","fatherCC":""},
+{"code":"769","distRule":"769","name":"MAHEVER SINGH","fatherCC":""},
+{"code":"770","distRule":"770","name":"GULAM NUBI","fatherCC":""},
+{"code":"771","distRule":"771","name":"MAHENDR KUMAR","fatherCC":""},
+{"code":"774","distRule":"774","name":"RAMAWTAR QUMAWAT","fatherCC":""},
+{"code":"775","distRule":"775","name":"LEELADHER","fatherCC":""},
+{"code":"776","distRule":"776","name":"AZAD ALAM","fatherCC":""},
+{"code":"777","distRule":"777","name":"MUHAMMAD SAJID","fatherCC":""},
+{"code":"778","distRule":"778","name":"MUHAMMAD NISAR","fatherCC":""},
+{"code":"779","distRule":"779","name":"ALI HAMZA","fatherCC":""},
+{"code":"780","distRule":"780","name":"MOHAMMAD NASIR TARIQ","fatherCC":""},
+{"code":"784","distRule":"784","name":"LM AKALANKA","fatherCC":""},
+{"code":"785","distRule":"785","name":"AFZAAL AHMED","fatherCC":""},
+{"code":"786","distRule":"786","name":"ZAKIR HUSSAIN","fatherCC":""},
+{"code":"787","distRule":"787","name":"MD FARUKH","fatherCC":""},
+{"code":"790","distRule":"790","name":"RAJU AHMED","fatherCC":""},
+{"code":"791","distRule":"791","name":"PAWAN BAHADUR BK","fatherCC":""},
+{"code":"795","distRule":"795","name":"MUHAMMAD BASHIR","fatherCC":""},
+{"code":"797","distRule":"797","name":"MUHAMMAD ASIM","fatherCC":""},
+{"code":"798","distRule":"798","name":"RANJEET SINGH DHUKIA","fatherCC":""},
+{"code":"805","distRule":"805","name":"ABDULLSALAM AL SEYABE","fatherCC":""},
+{"code":"806","distRule":"806","name":"Mujahed Khamis Al Balushi","fatherCC":""},
+{"code":"808","distRule":"808","name":"PRAMOD KOTTARAM","fatherCC":""},
+{"code":"811","distRule":"811","name":"PARASURAMAN","fatherCC":""},
+{"code":"812","distRule":"812","name":"LIKITH KUMAR","fatherCC":""},
+{"code":"813","distRule":"813","name":"SAQLAIN KOLARKAR","fatherCC":""},
+{"code":"817","distRule":"817","name":"PRABINKANTHU P","fatherCC":""},
+{"code":"820","distRule":"820","name":"RANA MUHAMMAD ABID HUSSAIN KHA","fatherCC":""},
+{"code":"821","distRule":"821","name":"CHANDRA BHAN SINGH","fatherCC":""},
+{"code":"823","distRule":"823","name":"RITIK MISHRA","fatherCC":""},
+{"code":"824","distRule":"824","name":"RUODELLE AZCUETA","fatherCC":""},
+{"code":"825","distRule":"825","name":"DEBABRATA DAS","fatherCC":""},
+{"code":"826","distRule":"826","name":"MILINDA SURESH","fatherCC":""},
+{"code":"833","distRule":"833","name":"Ravi Mahadevaiah","fatherCC":""},
+{"code":"8504AK","distRule":"8504AK","name":"8504 AK-XMAGRollerCompactor10T","fatherCC":""},
+{"code":"853","distRule":"853","name":"KESHAV YADAV","fatherCC":""},
+{"code":"854","distRule":"854","name":"QABAS JAMAL SALEEM AL WAHAIBI","fatherCC":""},
+{"code":"855","distRule":"855","name":"MD SHAMSUL HAQUE","fatherCC":""},
+{"code":"859","distRule":"859","name":"FAIZAN AHMED","fatherCC":""},
+{"code":"863","distRule":"863","name":"MUMAHHMD SAAD RIAYZ","fatherCC":""},
+{"code":"867","distRule":"867","name":"MUHAMMAD SAID ALSAIDI","fatherCC":""},
+{"code":"868","distRule":"868","name":"ABDULRAHMAN NOOH ALJARDANI","fatherCC":""},
+{"code":"871","distRule":"871","name":"CARMELO","fatherCC":""},
+{"code":"875","distRule":"875","name":"MITHUN THOMAS","fatherCC":""},
+{"code":"877","distRule":"877","name":"SAGAR LINGAPURAM","fatherCC":""},
+{"code":"879","distRule":"879","name":"JALAL AL SADEE","fatherCC":""},
+{"code":"880","distRule":"880","name":"IMRAN KHAN PATHAN","fatherCC":""},
+{"code":"881","distRule":"881","name":"NASIR AL SHABIBI","fatherCC":""},
+{"code":"882","distRule":"882","name":"OMMARUDEEN ALBALOSHI","fatherCC":""},
+{"code":"883","distRule":"883","name":"MD RIHAN ALAM","fatherCC":""},
+{"code":"883MR","distRule":"883MR","name":"883 MR-ZOOMLION-CRANE 60TON","fatherCC":""},
+{"code":"886","distRule":"886","name":"TEJASH SHAH","fatherCC":""},
+{"code":"888","distRule":"888","name":"MUHAMMAD BASIRI","fatherCC":""},
+{"code":"889","distRule":"889","name":"JEVAN PAUDEL","fatherCC":""},
+{"code":"890","distRule":"890","name":"SADARE ALAM KHAN","fatherCC":""},
+{"code":"891","distRule":"891","name":"GYANENDRA SHRSTHA","fatherCC":""},
+{"code":"892","distRule":"892","name":"KAJI MIGAR","fatherCC":""},
+{"code":"893","distRule":"893","name":"SAGIR ANSARI","fatherCC":""},
+{"code":"894","distRule":"894","name":"RAGHU P","fatherCC":""},
+{"code":"896","distRule":"896","name":"AIDA ALHUTI","fatherCC":""},
+{"code":"897","distRule":"897","name":"MUHAMMAD MOHASIN KURESHI","fatherCC":""},
+{"code":"898","distRule":"898","name":"SUNIL SUKUMARAN","fatherCC":""},
+{"code":"899","distRule":"899","name":"RASHID AL HABSI","fatherCC":""},
+{"code":"900","distRule":"900","name":"MUHAMMAD ATIK","fatherCC":""},
+{"code":"904","distRule":"904","name":"MUHAMMAD SHAMEM","fatherCC":""},
+{"code":"906","distRule":"906","name":"NADEEM AHMED ALIAS MUNNA","fatherCC":""},
+{"code":"907","distRule":"907","name":"BALA KRISHNAN .M","fatherCC":""},
+{"code":"909","distRule":"909","name":"HILAL NASIR AL GAITHI","fatherCC":""},
+{"code":"910","distRule":"910","name":"Mohamed Naseer Mohamed Niflan","fatherCC":""},
+{"code":"911","distRule":"911","name":"Mohamed Ajward Shamees Ahamed","fatherCC":""},
+{"code":"912","distRule":"912","name":"Kalaimani Duraisamy","fatherCC":""},
+{"code":"913","distRule":"913","name":"Bishnudev Yadav","fatherCC":""},
+{"code":"9169YR","distRule":"9169YR","name":"9169 YR-FAW-CHINA-Tipper 18cbm","fatherCC":""},
+{"code":"917","distRule":"917","name":"FERNANDO GOYAL","fatherCC":""},
+{"code":"918","distRule":"918","name":"RAMAKARAN YADAV","fatherCC":""},
+{"code":"922","distRule":"922","name":"SIVAOLAN PRITHAP","fatherCC":""},
+{"code":"923","distRule":"923","name":"HANI BADAR","fatherCC":""},
+{"code":"925","distRule":"925","name":"DIPACHAN CHAUHAN","fatherCC":""},
+{"code":"926","distRule":"926","name":"YASHWANT KUMAR","fatherCC":""},
+{"code":"927","distRule":"927","name":"ANJALI DEV","fatherCC":""},
+{"code":"928","distRule":"928","name":"ALTAF NADIR SUBAIR","fatherCC":""},
+{"code":"929","distRule":"929","name":"TAMANG SHYAM KUMAR","fatherCC":""},
+{"code":"930","distRule":"930","name":"RAGESH HAZARA","fatherCC":""},
+{"code":"931","distRule":"931","name":"NIPALI HIKMAT","fatherCC":""},
+{"code":"932","distRule":"932","name":"THARU SURAJ","fatherCC":""},
+{"code":"933","distRule":"933","name":"KUMAL RAJENDRA","fatherCC":""},
+{"code":"934","distRule":"934","name":"TAMANG BASANTA","fatherCC":""},
+{"code":"935","distRule":"935","name":"BAYAK BHUPENDRA","fatherCC":""},
+{"code":"936","distRule":"936","name":"TAMANG RANGAMAN","fatherCC":""},
+{"code":"947","distRule":"947","name":"MUSAB KHAMIS AL NABEE","fatherCC":""},
+{"code":"9473WB","distRule":"9473WB","name":"9473 WB-XMAG-Shovel","fatherCC":""},
+{"code":"9474WB","distRule":"9474WB","name":"9474 WB-XMAG-Shovel","fatherCC":""},
+{"code":"948","distRule":"948","name":"NA SAMEERA","fatherCC":""},
+{"code":"949","distRule":"949","name":"BELAL AHMED SHAMSHER","fatherCC":""},
+{"code":"951","distRule":"951","name":"DAVOOD SOLTANI","fatherCC":""},
+{"code":"952","distRule":"952","name":"MUHAMMAD RAMEEJULLA KHAN","fatherCC":""},
+{"code":"957","distRule":"957","name":"ZULFIQAR ALI","fatherCC":""},
+{"code":"958","distRule":"958","name":"MUHAMMAD WASIM KHAN","fatherCC":""},
+{"code":"962","distRule":"962","name":"AHMED ALI FUAAD","fatherCC":""},
+{"code":"963","distRule":"963","name":"SAMEER SHAIKH","fatherCC":""},
+{"code":"965","distRule":"965","name":"MAHENDAR RAMPYARE SAHANI","fatherCC":""},
+{"code":"966","distRule":"966","name":"SHAMBHO KATUWAN","fatherCC":""},
+{"code":"967","distRule":"967","name":"RAGHU MAHATO","fatherCC":""},
+{"code":"968","distRule":"968","name":"CLINSON CLEETUS","fatherCC":""},
+{"code":"969","distRule":"969","name":"SANJAY GANPAT KUTE","fatherCC":""},
+{"code":"9733LB","distRule":"9733LB","name":"9733 LB-ZOOMLION-Excav(ZE370E)","fatherCC":""},
+{"code":"974","distRule":"974","name":"SHYAM CHANDRA","fatherCC":""},
+{"code":"975","distRule":"975","name":"RATHEESH NAGENDRAN RAMADEVI","fatherCC":""},
+{"code":"9776MS","distRule":"9776MS","name":"9776 MS-ToyotaPICKUP1TON-HILUX","fatherCC":""},
+{"code":"978","distRule":"978","name":"ABDUL SAMAD DUROWADE","fatherCC":""},
+{"code":"980","distRule":"980","name":"RAMANAND PANDIT","fatherCC":""},
+{"code":"981","distRule":"981","name":"KUMAR GIRI","fatherCC":""},
+{"code":"982","distRule":"982","name":"ROHIT SHAH","fatherCC":""},
+{"code":"983","distRule":"983","name":"MOHAMMAD ARSHAD ANSARI","fatherCC":""},
+{"code":"985","distRule":"985","name":"SHAIKH SALIM","fatherCC":""},
+{"code":"986","distRule":"986","name":"MOHAMMAD FADHIL","fatherCC":""},
+{"code":"987","distRule":"987","name":"MUTASEM ISSA","fatherCC":""},
+{"code":"988","distRule":"988","name":"MOHAMMAD SHOUKAT MOHIUDIN","fatherCC":""},
+{"code":"991","distRule":"991","name":"DILIP KUMAR SAH","fatherCC":""},
+{"code":"N/A","distRule":"N/A","name":"N/A-JCB-Boom Loader","fatherCC":""}
+];
 
 const CMAP={"10-100-1":"VL-TYP-C","10-100-2":"VL-TYP-C","10-100-3":"VL-TYP-C","10-100-4":"VL-TYP-C","10-100-5":"VL-TYP-C","10-101-1":"VL-SDV","10-101-2":"VL-SDV","10-101-3":"VL-SDV","10-102-1":"VL-TYP-C","10-102-2":"VL-TYP-C","10-102-3":"VL-TYP-C","10-103-1":"VL-SDV","10-103-2":"VL-SDV","10-103-3":"VL-SDV","10-104-1":"VL-TYP-C","10-104-2":"VL-TYP-C","10-105-1":"VL-TYP-A","10-105-2":"VL-TYP-A","10-105-3":"VL-TYP-A","10-105-4":"VL-TYP-A","10-105-5":"VL-TYP-A","10-105-6":"VL-TYP-A","10-105-7":"VL-TYP-A","10-105-8":"VL-TYP-A","10-106-1":"VL-SDV","10-106-2":"VL-SDV","10-106-3":"VL-SDV","10-107-1":"VL-5","10-107-2":"VL-5","10-107-3":"VL-5","10-108-1":"VL-5","10-108-2":"VL-5","10-109-1":"VL-5","10-130-1":"VL-TYP-B","10-130-2":"VL-TYP-B","10-131-1":"VL-TYP-B","10-131-2":"VL-TYP-B","10-132-1":"VL-TYP-B","10-133-1":"VL-TYP-B","10-134-1":"VL-TYP-B","10-135-1":"VL-TYP-B","10-94-1":"VL-TYP-B","10-94-2":"VL-TYP-B","10-94-3":"VL-TYP-B","10-95-1":"VL-TYP-B","10-95-2":"VL-TYP-B","10-96-1":"VL-TYP-B","10-97-1":"VL-TYP-B","10-97-2":"VL-TYP-B","10-98-1":"VL-TYP-C","10-98-2":"VL-TYP-C","10-99-1":"VL-SDV","10-99-2":"VL-SDV","CLS94/95":"VL-TYP-B","CLS96/97":"VL-TYP-B","CLST-100":"VL-TYP-C","CLST-101":"VL-SDV","CLST-102":"VL-TYP-C","CLST-103":"VL-SDV","CLST-104":"VL-TYP-C","CLST-105":"VL-TYP-A","CLST-106":"VL-SDV","CLST-107":"VL-5","CLST-108":"VL-5","CLST-109":"VL-5","CLST-13":"VL-TYP-A","CLST-130":"VL-TYP-B","CLST-131":"VL-TYP-B","CLST-132":"VL-TYP-B","CLST-133":"VL-TYP-B","CLST-134":"VL-TYP-B","CLST-135":"VL-TYP-B","CLST-15":"VL-TYP-A","CLST-17":"VL-TYP-A","CLST-20":"VL-TYP-A","CLST-21":"VL-TYP-C","CLST-22":"VL-TYP-A","CLST-23":"VL-TYP-C","CLST-24":"VL-TYP-A","CLST-25":"VL-TYP-C","CLST-26":"VL-TYP-C","CLST-98":"VL-TYP-C","CLST-99":"VL-SDV"};
 
 const CCODES=[["1000","Prelims"],["1001","Site Mobilization"],["1002","Site Office & Administration"],["1003","Utilities & Temporary Facilities"],["1004","Safety & Security"],["1005","Scaffolding / Access"],["1006","Temporary Road/Site Clearance"],["1007","Insurance / Bonds / Permits"],["1008","Environmental/Waste Management"],["1009","Testing & Quality Control"],["1010","Stationery & Admin Consumables"],["1011","Camp Running"],["1012","Staff Accommodation"],["1013","Cleaning & Cafeteria"],["1014","Tradesman Transportation"],["1015","Staff Transportation"],["1016","Staff Salary"],["1017","Hiring Cost"],["1021","Others"],["1100","Plastering"],["1200","Painting & Decorations"],["1300","Waterproofing-SuperStructure"],["1400","Tileworks (All Area)"],["1500","Ceiling Finishes"],["1600","Doors & Windows"],["1700","Handrails & Balustrade"],["1800","Kitchen Cabin & Vanity Units"],["1900","MEP"],["2000","Excavation & Disposal"],["2100","HVAC"],["2200","External MEP & Irrigation"],["2300","Boundary Wall"],["2400","Interlock Tiles"],["2500","Kerbstone"],["2600","Landscaping"],["2700","Builders Works"],["2800","Cleaning & Handing Over"],["2900","Consumable Items"],["3000","Backfilling"],["3100","General Works"],["3600","Tower Crane Cost"],["4700","Hand/Power Tools"],["4800","Equipment Maintenance"],["5000","Foundations Incl Ground Slab"],["6000","Waterproofing-Substructure"],["7000","Masonry Works-SubStructure"],["8000","Concreting-SuperStructure"],["9000","Masonry Works-SuperStructure"],["FIXA","Fixed Asset"],["GEN3","GENERAL"],["VARI","VARIATION"]];
 
-const CONTRACTORS=["A & H LLC", "Abdul Rahman adel for Trade & Investment SPC", "Abu Dana Al Rashidi Trading Co.", "ABU TAIMOR AL RAISI TRAD. LLC.", "Advance Innovative Services & Contracting LLC", "ADVANCED ENGINEERING & BUILDING MATERIALS COMPANY LLC", "Advanced Safety Solutions", "Afaq Al Magd", "AFAQ for Multiple Investments SPC", "AHMED BINSAID SATINERY", "AL - RUBHAN TRAD.", "AL AMANA BUILDING MATERIALS CO LLC", "AL Amrat Contracting & Business LLC", "Al Ansari", "Al Anwar Ceramic Tiles Co. SAOG", "al ariq equipment llc", "AL DANUBE BUILDING MATERIAL AND TRADING CO LLC.", "AL ESTIQRAR TRADING & INVESTMENT", "AL GURG CO LLC", "AL HARIB NATIONAL PROJECTS", "AL HASHAR & CO LLC", "Al Hayat Genaral Trade and Investment SPC", "AL HILAL INTEGRATED INTERNATIONAL LLC", "Al Hinai United Project", "Al Huda International United Company SPC", "AL INMA BUILDING MATERIAL LLC", "AL JASSAR LLC", "AL JIZZI COMPANY LLC", "AL JOUD TRANSPORT & TRADE", "AL JOUD TRANSPORT & TRADE", "AL JOUD TRANSPORT & TRADE", "AL KABBANI INTERNATIONAL TRADING LLC", "AL KHALILI SPECIALIZED PROJECTS LLC", "AL KHALILI UNITED ENTERPRISES LLC", "AL KIYUMI INTEGRATED ENTERPRISES LLC", "AL KIYUMI SWITCHGEAR LLC", "Al Laith Building Cont. Business and Investment LLC", "AL MAWALEH GOLDEN SAND TRAD.", "AL MUHIT LOGISTIC SPC", "AL MURAD INTERNATIONAL CO. LLC", "Al Mustafa Engineering and Contracting LLC", "AL NASR SAFETY SERVICES", "AL NASR TRADING & CONTRACTING LLC", "Al Nehad Engineering Trad. & Cont. LLC", "AL OMRAN LINE UNITED LLC", "Al Safwa Al Jadeeda Contracting", "Al Sameem International", "Al Siyabi Trading", "AL TASNIM CEMENT PRODUCTS LLC", "AL TASNIM MIDDLE EAST LLC", "AL YUSR INTERNATIONAL LLC", "ALFURQAN ALSHAMILA", "Ali Alhossino for Investment LLC", "Alraisi Group Int. COM SPC", "AMJAD AL MARA TRADING", "Antoin Assy Trading LLC", "APTUS INFOTECH (ORIENTAL ORYX INTERNATIONAL LLC)", "Arab Dream Construction Contracting", "Arhab Trading Est.", "ASSARAIN CONCRETE PRODUCTS & TRADING LLC", "Atras International Trading & Services SPC", "Bahwan Projects & Telecom LLC", "BEST CHOICE CERAMICS", "Best Solutions for businesses LLC", "Bin Hammed Construction LLC", "BIN SALIM ENTERPRISES LLC", "BLUE EAGLE LOGISTICS LLC", "BS Design & Contracting", "Bunyan technical Services LLC", "Business House for Trade and Investment SPC", "CASH PURCHASE", "CHAINLINK FENCING CO. LLC", "CONCEPT INTERNATIONAL LLC", "Crystal Flash LLC", "DAS INVESTMENT & TRANSPORT CO. LLC", "Desert Investment LLC", "DIGITAL TECHNOLOGY IT SOLUTIONS", "DUCAB MUSCAT LLC", "Durrat Al Safwa International LLC", "East & West Trading & Contracting SPC", "Eco Sense Engineering Services LLC", "EINT AUTOMOTIVE LLC", "Elmallah International Investment", "ENGINEERS WITH OUT BORDERS CONSULTANTS", "EUROTECH  INTERNATIONAL LLC", "EXCEL TECHNICAL & INDUSTRIAL SUPPLIES LLC", "EXPANDED METAL MANUFACTURING CO. SPC", "Fahmy Furniture L.L.C", "Fairdeal Trading & Contracting LLC", "Faisal Wesal Trading and Business LLC", "FIXLINE PRODUCTS LIMITED LLC", "FUTURE OILFIELD SUPPLY & SERVICES LLC", "Future Technology for Investment LLC", "G.E.M TRADING & SERVICES LLC", "Ghalib Projects Trading LLC", "GLOBAL LANDSCAPE DESIGNERS SPC", "Global Precast Industries LLC", "Golden Arch Developments", "GOLDEN DISTINGUISHED TRAD", "GOLDEN INTERNATIONAL EST. LLC", "GREENLAND EQUIPMENTS & MACHINERY", "GULF INTERNATIONAL CHEMICALS SAOG", "GULF MODERN BUSINESS", "GULF SERVICE & INDUSTRIAL SUPPLIEES CO. LLC", "Hamood Bin Hamed Al Qatiti Trad", "Hanna International", "HONGKONG TITANJING LIMITED", "HONKONG TIANJING LIMITED", "IBN YASER AL RASHDI TRADING", "Ibrahim Al Malah", "INFINITY DESIGN STUDIO", "INFINITY NATIONAL LLC", "INMA CO. OMAN LLC", "Innovation for Design & Investment", "International Rose LLC", "Jana Trading LLC", "Jibreen International Business LLC", "JOTUN PAINTS LLC", "KANZ INTERNATIONAL PROJECTS & TECHNICAL SERVICES LLC", "Khaled Khair Trad SPC", "KHAN TRADING & CONSTRUCTON COMPANY LLC", "KHIMJI RAMDAS GROUP", "Khoday Qal & Muhammad Trad. LLC", "KHURSHID TECHNICAL CO LLC", "Kosr & Sohag Business Trading LLC", "Leading Global Development and Service LLC", "LUMBER WORLD BUILDING MATERIAL LLC", "MAC AL GURG LLC", "Majan Equipment and Services Compan L.L.C", "Majan Modern Solutions", "MAJID WATER COOLER & AIR CONDITIONING CO. LLC", "Makers Al Khair Trading", "Marassi International for Investment LLC", "Marassi International for Investment LLC", "MARMUL TOWER INTERNATIONAL LLC", "MARVEL NATIONAL LLC", "MIDDLE EAST MEDIA&ADVERTISING", "MIDEA MBT - PHOENIX TRADING AND INVESTMENT LLC", "MODERN DIAMOND ENT.", "MODERN DREAM LINE", "Modern Gulf Minerals Trading & Contracting LLC", "Mohammad Taysser for Business Building Contracting", "MOHAMMED RIAZ & PARTNER LLC", "MOHSIN HAIDER DARWISH LLC", "MOOSA ABDUL RAHMAN HASSAN&CO LLC", "MUEPRO MIDDLE EAST FZE", "Muhammed Istheyaque Khan Trading SPC", "MUNA NOOR MANUFACTURING & TRADING LLC", "MUSCAT HEATERS INDUSTRY LLC", "MUSCAT OVERSEAS EQUIPMENT TRADING CO LLC", "NAJAM AL ZAHRA TRADING", "Nandani Construction SPC", "Naseem Wadi Bani Hani", "NASER GUL BEK AL BALUSHI", "NASSRULLAH BIN MOHAMED AL-AMRY TRADING", "NATIONAL CABLE FACTORY LLC", "NATIONAL PLASTIC FACTORY LLC", "NEW HOME WORLD PROJECTS SPC", "NEW STAR LINE LLC", "NOVEL DESTINY TRADING LLC", "O TRADE & LOGISTICS", "Oman Gulf Enterprises LLC", "OMAN OIL MARKETING COMPANY SAOG", "OMAN TRADING ESTABLISHMENT LLC", "ORIENTAL CEMENT & CONCRETE INDUSTRIES LLC", "ORIENTAL CEMENT PRODUCTS CO. LLC", "ORIENTAL DRY MORTAR LLC", "Osayd Global Contracting Building Decoration works", "PERFECT CITY TRADING LLC", "PIONEERING LINE OF TECHNICAL SERVICES", "PLAFIXX LLC", "PMA INTERNATIONAL LLC", "POWERMAX TRADING L.L.C", "PRINTWAVES S.P.C", "PROFESSIONAL SOLUTIONS TRADING LLC", "PUTZWERK LLC", "Queen International for Trade & Investment LLC", "REGAL INTERNATIONAL FURNITURE LLC", "Right Will Trading and Contracting LLC", "ROOTS FOR MODERN PROJECTS", "Rukn Alsalam Alraaqi LLC", "Sadaf Trading & investment LLC", "Saeed Shhata Ahmed Abuzaid", "Saleh Reza for Trading & Investment LLC", "SAMA AL KHADRA TRADING", "Samir Mohamed Al Zadjali Trading", "SAUD BAHWAN AUTOMOTIVE LLC", "SCH Scaffolding & Formworks  LLC", "SIKA MB LLC", "Sky Construction SPC", "SKYEDGE INTERNATIONAL SPC", "SODAMCO MUSCAT LLC", "STAR PUMPS TRADE SPC", "Stoneman Marble & Granite LLC", "SUN UNION INTERNATIONAL PROJECT LLC", "syed qaiser partner trading llc", "Talal Hai Al Naseem Trad. &  Cont. LLC", "TALENT ELECTRIC SERVICES L.L.C.", "Target Full Cont. LLC", "TARMAK LABORATORIES", "TECH ZONE BUILDING MATERIALS", "TECHNICAL BUSINESS INNOVATIONS LLC", "TECHNICAL SUPPLIES INTERNATIONAL CO. LLC", "TOTAL CONNEXONS ELECTRICAL", "United Business Green Land Company", "United Door Trading", "UNITED FUTURE BUILDERS LLC", "Vahab Mohajer Public Investment LLC", "VEGA SHIPPING SERVICES LLC", "W J TOWELL LLC", "WADI HABES TRADING EST.", "Wefaq Fadhel Trading & Invest SPC LLC", "White Lynx Travel & Tourism SPC", "ZOOMLION HEAVY INDUSTRY SPC"];
+const CONTRACTORS_DATA=[
+{"name":"A & H LLC","code":"V00110","balance":0},
+{"name":"Abdul Rahman adel for Trade & Investment SPC","code":"V00130","balance":0},
+{"name":"Abu Dana Al Rashidi Trading Co.","code":"V00139","balance":0},
+{"name":"ABU TAIMOR AL RAISI TRAD. LLC.","code":"V00008","balance":0},
+{"name":"Advance Innovative Services & Contracting LLC","code":"V00114","balance":0},
+{"name":"ADVANCED ENGINEERING & BUILDING MATERIALS COMPANY LLC","code":"V00052","balance":0},
+{"name":"Advanced Safety Solutions","code":"V00182","balance":0},
+{"name":"Afaq Al Magd","code":"V00153","balance":0},
+{"name":"AFAQ for Multiple Investments SPC","code":"V00099","balance":0},
+{"name":"AHMED BINSAID SATINERY","code":"V00147","balance":0},
+{"name":"AL - RUBHAN TRAD.","code":"V00043","balance":0},
+{"name":"AL AMANA BUILDING MATERIALS CO LLC","code":"V00001","balance":0},
+{"name":"AL Amrat Contracting & Business LLC","code":"V00172","balance":0},
+{"name":"Al Ansari","code":"V00112","balance":0},
+{"name":"Al Anwar Ceramic Tiles Co. SAOG","code":"V00166","balance":0},
+{"name":"al ariq equipment llc","code":"V00189","balance":0},
+{"name":"AL DANUBE BUILDING MATERIAL AND TRADING CO LLC.","code":"V00079","balance":0},
+{"name":"AL ESTIQRAR TRADING & INVESTMENT","code":"V00160","balance":0},
+{"name":"AL GURG CO LLC","code":"V00155","balance":0},
+{"name":"AL HARIB NATIONAL PROJECTS","code":"V00059","balance":0},
+{"name":"AL HASHAR & CO LLC","code":"V00197","balance":0},
+{"name":"Al Hayat Genaral Trade and Investment SPC","code":"V00215","balance":0},
+{"name":"AL HILAL INTEGRATED INTERNATIONAL LLC","code":"V00018","balance":0},
+{"name":"Al Hinai United Project","code":"V00103","balance":0},
+{"name":"Al Huda International United Company SPC","code":"V00212","balance":0},
+{"name":"AL INMA BUILDING MATERIAL LLC","code":"V00010","balance":-1199.52},
+{"name":"AL JASSAR LLC","code":"V00009","balance":0},
+{"name":"AL JIZZI COMPANY LLC","code":"V00065","balance":0},
+{"name":"AL JOUD TRANSPORT & TRADE (C00001)","code":"C00001","balance":0},
+{"name":"AL JOUD TRANSPORT & TRADE (C00002)","code":"C00002","balance":0},
+{"name":"AL JOUD TRANSPORT & TRADE (V00148)","code":"V00148","balance":-269.767},
+{"name":"AL KABBANI INTERNATIONAL TRADING LLC","code":"V00156","balance":0},
+{"name":"AL KHALILI SPECIALIZED PROJECTS LLC","code":"V00026","balance":0},
+{"name":"AL KHALILI UNITED ENTERPRISES LLC","code":"V00086","balance":0},
+{"name":"AL KIYUMI INTEGRATED ENTERPRISES LLC","code":"V00022","balance":0},
+{"name":"AL KIYUMI SWITCHGEAR LLC","code":"V00007","balance":0},
+{"name":"Al Laith Building Cont. Business and Investment LLC","code":"V00087","balance":0},
+{"name":"AL MAWALEH GOLDEN SAND TRAD.","code":"V00044","balance":0},
+{"name":"AL MUHIT LOGISTIC SPC","code":"V00196","balance":0},
+{"name":"AL MURAD INTERNATIONAL CO. LLC","code":"V00039","balance":0},
+{"name":"Al Mustafa Engineering and Contracting LLC","code":"V00098","balance":0},
+{"name":"AL NASR SAFETY SERVICES","code":"V00054","balance":0},
+{"name":"AL NASR TRADING & CONTRACTING LLC","code":"V00025","balance":0},
+{"name":"Al Nehad Engineering Trad. & Cont. LLC","code":"V00089","balance":0},
+{"name":"AL OMRAN LINE UNITED LLC","code":"V00003","balance":0},
+{"name":"Al Safwa Al Jadeeda Contracting","code":"V00149","balance":0},
+{"name":"Al Sameem International","code":"V00131","balance":0},
+{"name":"Al Siyabi Trading","code":"V00128","balance":0},
+{"name":"AL TASNIM CEMENT PRODUCTS LLC","code":"V00015","balance":0},
+{"name":"AL TASNIM MIDDLE EAST LLC","code":"V00064","balance":0},
+{"name":"AL YUSR INTERNATIONAL LLC","code":"V00072","balance":-18963},
+{"name":"ALFURQAN ALSHAMILA","code":"V00180","balance":0},
+{"name":"Ali Alhossino for Investment LLC","code":"V00146","balance":0},
+{"name":"Alraisi Group Int. COM SPC","code":"V00125","balance":0},
+{"name":"AMJAD AL MARA TRADING","code":"V00145","balance":0},
+{"name":"Antoin Assy Trading LLC","code":"V00158","balance":0},
+{"name":"APTUS INFOTECH (ORIENTAL ORYX INTERNATIONAL LLC)","code":"V00017","balance":0},
+{"name":"Arab Dream Construction Contracting","code":"V00088","balance":0},
+{"name":"Arhab Trading Est.","code":"V00124","balance":0},
+{"name":"ASSARAIN CONCRETE PRODUCTS & TRADING LLC","code":"V00032","balance":0},
+{"name":"Atras International Trading & Services SPC","code":"V00204","balance":0},
+{"name":"Bahwan Projects & Telecom LLC","code":"V00120","balance":0},
+{"name":"BEST CHOICE CERAMICS","code":"V00042","balance":0},
+{"name":"Best Solutions for businesses LLC","code":"V00132","balance":0},
+{"name":"Bin Hammed Construction LLC","code":"V00101","balance":0},
+{"name":"BIN SALIM ENTERPRISES LLC","code":"V00020","balance":0},
+{"name":"BLUE EAGLE LOGISTICS LLC","code":"V00066","balance":0},
+{"name":"BS Design & Contracting","code":"V00095","balance":0},
+{"name":"Bunyan technical Services LLC","code":"V00209","balance":0},
+{"name":"Business House for Trade and Investment SPC","code":"V00142","balance":0},
+{"name":"CASH PURCHASE","code":"V00198","balance":0},
+{"name":"CHAINLINK FENCING CO. LLC","code":"V00021","balance":0},
+{"name":"CONCEPT INTERNATIONAL LLC","code":"V00019","balance":0},
+{"name":"Crystal Flash LLC","code":"V00165","balance":0},
+{"name":"DAS INVESTMENT & TRANSPORT CO. LLC","code":"V00057","balance":0},
+{"name":"Desert Investment LLC","code":"V00106","balance":0},
+{"name":"DIGITAL TECHNOLOGY IT SOLUTIONS","code":"V00201","balance":0},
+{"name":"DUCAB MUSCAT LLC","code":"V00037","balance":0},
+{"name":"Durrat Al Safwa International LLC","code":"V00105","balance":0},
+{"name":"East & West Trading & Contracting SPC","code":"V00097","balance":0},
+{"name":"Eco Sense Engineering Services LLC","code":"V00093","balance":0},
+{"name":"EINT AUTOMOTIVE LLC","code":"V00030","balance":0},
+{"name":"Elmallah International Investment","code":"V00193","balance":0},
+{"name":"ENGINEERS WITH OUT BORDERS CONSULTANTS","code":"V00200","balance":0},
+{"name":"EUROTECH  INTERNATIONAL LLC","code":"V00028","balance":0},
+{"name":"EXCEL TECHNICAL & INDUSTRIAL SUPPLIES LLC","code":"V00159","balance":0},
+{"name":"EXPANDED METAL MANUFACTURING CO. SPC","code":"V00005","balance":0},
+{"name":"Fahmy Furniture L.L.C","code":"V00143","balance":0},
+{"name":"Fairdeal Trading & Contracting LLC","code":"V00151","balance":0},
+{"name":"Faisal Wesal Trading and Business LLC","code":"V00157","balance":0},
+{"name":"FIXLINE PRODUCTS LIMITED LLC","code":"V00071","balance":0},
+{"name":"FUTURE OILFIELD SUPPLY & SERVICES LLC","code":"V00016","balance":0},
+{"name":"Future Technology for Investment LLC","code":"V00091","balance":0},
+{"name":"G.E.M TRADING & SERVICES LLC","code":"V00136","balance":0},
+{"name":"Ghalib Projects Trading LLC","code":"V00161","balance":0},
+{"name":"GLOBAL LANDSCAPE DESIGNERS SPC","code":"V00164","balance":0},
+{"name":"Global Precast Industries LLC","code":"V00117","balance":0},
+{"name":"Golden Arch Developments","code":"V00137","balance":0},
+{"name":"GOLDEN DISTINGUISHED TRAD","code":"V00214","balance":0},
+{"name":"GOLDEN INTERNATIONAL EST. LLC","code":"V00013","balance":0},
+{"name":"GREENLAND EQUIPMENTS & MACHINERY","code":"V00135","balance":0},
+{"name":"GULF INTERNATIONAL CHEMICALS SAOG","code":"V00187","balance":0},
+{"name":"GULF MODERN BUSINESS","code":"V00002","balance":0},
+{"name":"GULF SERVICE & INDUSTRIAL SUPPLIEES CO. LLC","code":"V00069","balance":0},
+{"name":"Hamood Bin Hamed Al Qatiti Trad","code":"V00115","balance":0},
+{"name":"Hanna International","code":"V00173","balance":0},
+{"name":"HONGKONG TITANJING LIMITED","code":"V00194","balance":0},
+{"name":"HONKONG TIANJING LIMITED","code":"V00190","balance":0},
+{"name":"IBN YASER AL RASHDI TRADING","code":"V00169","balance":0},
+{"name":"Ibrahim Al Malah","code":"C00004","balance":0},
+{"name":"INFINITY DESIGN STUDIO","code":"V00181","balance":0},
+{"name":"INFINITY NATIONAL LLC","code":"V00011","balance":0},
+{"name":"INMA CO. OMAN LLC","code":"V00081","balance":0},
+{"name":"Innovation for Design & Investment","code":"V00176","balance":0},
+{"name":"International Rose LLC","code":"V00100","balance":0},
+{"name":"Jana Trading LLC","code":"V00211","balance":0},
+{"name":"Jibreen International Business LLC","code":"V00175","balance":0},
+{"name":"JOTUN PAINTS LLC","code":"V00053","balance":0},
+{"name":"KANZ INTERNATIONAL PROJECTS & TECHNICAL SERVICES LLC","code":"V00075","balance":0},
+{"name":"Khaled Khair Trad SPC","code":"V00178","balance":0},
+{"name":"KHAN TRADING & CONSTRUCTON COMPANY LLC","code":"V00206","balance":0},
+{"name":"KHIMJI RAMDAS GROUP","code":"V00014","balance":0},
+{"name":"Khoday Qal & Muhammad Trad. LLC","code":"V00150","balance":0},
+{"name":"KHURSHID TECHNICAL CO LLC","code":"V00129","balance":0},
+{"name":"Kosr & Sohag Business Trading LLC","code":"V00092","balance":0},
+{"name":"Leading Global Development and Service LLC","code":"V00104","balance":0},
+{"name":"LUMBER WORLD BUILDING MATERIAL LLC","code":"V00121","balance":0},
+{"name":"MAC AL GURG LLC","code":"V00076","balance":0},
+{"name":"Majan Equipment and Services Compan L.L.C","code":"V00199","balance":0},
+{"name":"Majan Modern Solutions","code":"V00094","balance":0},
+{"name":"MAJID WATER COOLER & AIR CONDITIONING CO. LLC","code":"V00049","balance":0},
+{"name":"Makers Al Khair Trading","code":"V00119","balance":0},
+{"name":"Marassi International for Investment LLC (V00188)","code":"V00188","balance":0},
+{"name":"Marassi International for Investment LLC (V00202)","code":"V00202","balance":0},
+{"name":"MARMUL TOWER INTERNATIONAL LLC","code":"V00183","balance":0},
+{"name":"MARVEL NATIONAL LLC","code":"V00006","balance":0},
+{"name":"MIDDLE EAST MEDIA&ADVERTISING","code":"V00152","balance":0},
+{"name":"MIDEA MBT - PHOENIX TRADING AND INVESTMENT LLC","code":"V00023","balance":0},
+{"name":"MODERN DIAMOND ENT.","code":"V00024","balance":0},
+{"name":"MODERN DREAM LINE","code":"V00134","balance":0},
+{"name":"Modern Gulf Minerals Trading & Contracting LLC","code":"V00154","balance":0},
+{"name":"Mohammad Taysser for Business Building Contracting","code":"V00203","balance":0},
+{"name":"MOHAMMED RIAZ & PARTNER LLC","code":"V00034","balance":0},
+{"name":"MOHSIN HAIDER DARWISH LLC","code":"V00038","balance":0},
+{"name":"MOOSA ABDUL RAHMAN HASSAN&CO LLC","code":"V00184","balance":0},
+{"name":"MUEPRO MIDDLE EAST FZE","code":"V00012","balance":0},
+{"name":"Muhammed Istheyaque Khan Trading SPC","code":"V00133","balance":0},
+{"name":"MUNA NOOR MANUFACTURING & TRADING LLC","code":"V00060","balance":0},
+{"name":"MUSCAT HEATERS INDUSTRY LLC","code":"V00067","balance":0},
+{"name":"MUSCAT OVERSEAS EQUIPMENT TRADING CO LLC","code":"V00185","balance":0},
+{"name":"NAJAM AL ZAHRA TRADING","code":"V00077","balance":0},
+{"name":"Nandani Construction SPC","code":"V00177","balance":0},
+{"name":"Naseem Wadi Bani Hani","code":"V00163","balance":0},
+{"name":"NASER GUL BEK AL BALUSHI","code":"V00205","balance":0},
+{"name":"NASSRULLAH BIN MOHAMED AL-AMRY TRADING","code":"V00058","balance":0},
+{"name":"NATIONAL CABLE FACTORY LLC","code":"V00061","balance":-96312.171},
+{"name":"NATIONAL PLASTIC FACTORY LLC","code":"V00031","balance":0},
+{"name":"NEW HOME WORLD PROJECTS SPC","code":"V00144","balance":0},
+{"name":"NEW STAR LINE LLC","code":"V00073","balance":0},
+{"name":"NOVEL DESTINY TRADING LLC","code":"V00111","balance":0},
+{"name":"O TRADE & LOGISTICS","code":"V00036","balance":0},
+{"name":"Oman Gulf Enterprises LLC","code":"V00162","balance":0},
+{"name":"OMAN OIL MARKETING COMPANY SAOG","code":"V00040","balance":0},
+{"name":"OMAN TRADING ESTABLISHMENT LLC","code":"V00047","balance":0},
+{"name":"ORIENTAL CEMENT & CONCRETE INDUSTRIES LLC","code":"V00080","balance":0},
+{"name":"ORIENTAL CEMENT PRODUCTS CO. LLC","code":"V00068","balance":0},
+{"name":"ORIENTAL DRY MORTAR LLC","code":"V00045","balance":0},
+{"name":"Osayd Global Contracting Building Decoration works","code":"V00216","balance":0},
+{"name":"PERFECT CITY TRADING LLC","code":"V00195","balance":0},
+{"name":"PIONEERING LINE OF TECHNICAL SERVICES","code":"V00107","balance":0},
+{"name":"PLAFIXX LLC","code":"V00051","balance":0},
+{"name":"PMA INTERNATIONAL LLC","code":"V00041","balance":0},
+{"name":"POWERMAX TRADING L.L.C","code":"V00063","balance":0},
+{"name":"PRINTWAVES S.P.C","code":"V00070","balance":0},
+{"name":"PROFESSIONAL SOLUTIONS TRADING LLC","code":"V00074","balance":0},
+{"name":"PUTZWERK LLC","code":"V00082","balance":0},
+{"name":"Queen International for Trade & Investment LLC","code":"V00140","balance":0},
+{"name":"REGAL INTERNATIONAL FURNITURE LLC","code":"V00050","balance":0},
+{"name":"Right Will Trading and Contracting LLC","code":"V00168","balance":0},
+{"name":"ROOTS FOR MODERN PROJECTS","code":"V00029","balance":0},
+{"name":"Rukn Alsalam Alraaqi LLC","code":"V00118","balance":0},
+{"name":"Sadaf Trading & investment LLC","code":"V00126","balance":0},
+{"name":"Saeed Shhata Ahmed Abuzaid","code":"V00085","balance":0},
+{"name":"Saleh Reza for Trading & Investment LLC","code":"V00090","balance":0},
+{"name":"SAMA AL KHADRA TRADING","code":"V00083","balance":0},
+{"name":"Samir Mohamed Al Zadjali Trading","code":"V00127","balance":0},
+{"name":"SAUD BAHWAN AUTOMOTIVE LLC","code":"V00048","balance":0},
+{"name":"SCH Scaffolding & Formworks  LLC","code":"V00113","balance":0},
+{"name":"SIKA MB LLC","code":"V00078","balance":0},
+{"name":"Sky Construction SPC","code":"V00213","balance":0},
+{"name":"SKYEDGE INTERNATIONAL SPC","code":"V00108","balance":0},
+{"name":"SODAMCO MUSCAT LLC","code":"V00027","balance":-5948.25},
+{"name":"STAR PUMPS TRADE SPC","code":"V00056","balance":0},
+{"name":"Stoneman Marble & Granite LLC","code":"V00122","balance":0},
+{"name":"SUN UNION INTERNATIONAL PROJECT LLC","code":"V00116","balance":0},
+{"name":"syed qaiser partner trading llc","code":"V00186","balance":0},
+{"name":"Talal Hai Al Naseem Trad. &  Cont. LLC","code":"V00102","balance":0},
+{"name":"TALENT ELECTRIC SERVICES L.L.C.","code":"V00004","balance":0},
+{"name":"Target Full Cont. LLC","code":"V00141","balance":0},
+{"name":"TARMAK LABORATORIES","code":"V00035","balance":0},
+{"name":"TECH ZONE BUILDING MATERIALS","code":"V00191","balance":0},
+{"name":"TECHNICAL BUSINESS INNOVATIONS LLC","code":"V00207","balance":0},
+{"name":"TECHNICAL SUPPLIES INTERNATIONAL CO. LLC","code":"V00109","balance":0},
+{"name":"TOTAL CONNEXONS ELECTRICAL","code":"V00123","balance":0},
+{"name":"United Business Green Land Company","code":"V00138","balance":0},
+{"name":"United Door Trading","code":"V00171","balance":0},
+{"name":"UNITED FUTURE BUILDERS LLC","code":"V00167","balance":0},
+{"name":"Vahab Mohajer Public Investment LLC","code":"V00210","balance":0},
+{"name":"VEGA SHIPPING SERVICES LLC","code":"V00179","balance":5297.92},
+{"name":"W J TOWELL LLC","code":"V00192","balance":0},
+{"name":"WADI HABES TRADING EST.","code":"V00033","balance":0},
+{"name":"Wefaq Fadhel Trading & Invest SPC LLC","code":"V00084","balance":0},
+{"name":"White Lynx Travel & Tourism SPC","code":"V00170","balance":0},
+{"name":"ZOOMLION HEAVY INDUSTRY SPC","code":"V00062","balance":0}
+];
+const CONTRACTORS=CONTRACTORS_DATA.map(c=>c.name);
 
 const CATS=[
   {p:'CIV',n:'Civil',      i:'🧱',d:'CIVIL',    c:195},
@@ -851,11 +1400,69 @@ function buildClusters(){
 }
 
 function buildContractors(){
-  const sel=document.getElementById('mrs_contractor');
-  CONTRACTORS.forEach(name=>{
-    const o=document.createElement('option');
-    o.value=name;o.textContent=name;sel.appendChild(o);
+  // contractor is now a combo-input; no select to populate
+}
+
+// ── CONTRACTOR COMBO ──
+let _ctrHi=-1;
+function contractorSearch(){
+  const q=document.getElementById('mrs_contractor').value.trim().toLowerCase();
+  const dd=document.getElementById('contractorDd');
+  document.getElementById('contractor_info').style.display='none';
+  if(!q){dd.style.display='none';return;}
+  const hits=CONTRACTORS_DATA.filter(c=>c.name.toLowerCase().includes(q)||c.code.toLowerCase().includes(q)).slice(0,12);
+  if(!hits.length){dd.style.display='none';return;}
+  _ctrHi=-1;
+  dd.innerHTML=hits.map((c,i)=>{
+    const bal=c.balance!==0?(`<span style="color:${c.balance<0?'var(--red)':'var(--grn)'}">${c.balance>0?'+':''}${c.balance.toLocaleString()} OMR</span>`):'';
+    return `<div class="ddi" id="ctrdd${i}" onmousedown="pickContractor(${i})" data-idx="${i}">
+      <span class="did">${c.code}</span> <span class="dds">${c.name}</span>
+      ${bal?'<div class="ddm">'+bal+'</div>':''}
+    </div>`;
+  }).join('');
+  dd._hits=hits;
+  dd.style.display='block';
+}
+function contractorDdKey(e){
+  const dd=document.getElementById('contractorDd');
+  if(!dd._hits||dd.style.display==='none') return;
+  if(e.key==='ArrowDown'){_ctrHi=Math.min(_ctrHi+1,dd._hits.length-1);hilightCtr();}
+  else if(e.key==='ArrowUp'){_ctrHi=Math.max(_ctrHi-1,0);hilightCtr();}
+  else if(e.key==='Enter'&&_ctrHi>=0){pickContractor(_ctrHi);e.preventDefault();}
+  else if(e.key==='Escape'){closeContractorDd();}
+}
+function hilightCtr(){
+  const dd=document.getElementById('contractorDd');
+  if(!dd._hits) return;
+  dd._hits.forEach((_,i)=>{
+    const el=document.getElementById('ctrdd'+i);
+    if(el) el.classList.toggle('hi',i===_ctrHi);
   });
+}
+function pickContractor(idx){
+  const dd=document.getElementById('contractorDd');
+  if(!dd._hits) return;
+  const c=dd._hits[idx];
+  document.getElementById('mrs_contractor').value=c.name;
+  showContractorInfo(c);
+  closeContractorDd();
+}
+function showContractorInfo(c){
+  const box=document.getElementById('contractor_info');
+  document.getElementById('contractor_code').textContent=c.code;
+  const bal=c.balance!==0?(`Balance: ${c.balance>0?'+':''}${c.balance.toLocaleString()} OMR`):'Balance: 0 OMR';
+  const bspan=document.getElementById('contractor_balance');
+  bspan.textContent=bal;
+  bspan.style.color=c.balance<0?'var(--red)':c.balance>0?'var(--grn)':'var(--sub)';
+  box.style.display='flex';
+}
+function closeContractorDd(){
+  const dd=document.getElementById('contractorDd');
+  dd.style.display='none';
+  // if typed value matches a contractor exactly, show its info
+  const val=document.getElementById('mrs_contractor').value.trim();
+  const match=CONTRACTORS_DATA.find(c=>c.name.toLowerCase()===val.toLowerCase());
+  if(match) showContractorInfo(match);
 }
 
 function buildMRSCluster(){
@@ -875,11 +1482,83 @@ function buildMRSCostCode(){
 }
 
 function buildMRSStaff(){
-  const sel=document.getElementById('mrs_staff');
-  STAFF.forEach(s=>{
-    const o=document.createElement('option');
-    o.value=s.code;o.textContent=s.name||s.code;sel.appendChild(o);
+  // staff is now a rich combo-input; no datalist to populate
+}
+
+// ── STAFF COMBO (MRS) ──
+let _staffHi=-1;
+function staffSearch(){
+  const q=document.getElementById('mrs_staff').value.trim().toLowerCase();
+  const dd=document.getElementById('staffDd');
+  document.getElementById('mrs_staff_info').style.display='none';
+  if(!q){dd.style.display='none';return;}
+  const hits=STAFF.filter(s=>s.name.toLowerCase().includes(q)||s.distRule.toLowerCase().includes(q)||s.code.toLowerCase().includes(q)).slice(0,12);
+  if(!hits.length){dd.style.display='none';return;}
+  _staffHi=-1;
+  dd.innerHTML=hits.map((s,i)=>{
+    const fc=s.fatherCC?`<span style="color:var(--pur);font-size:9px">Father CC: ${s.fatherCC}</span>`:'';
+    return `<div class="ddi" id="staffdd${i}" onmousedown="pickStaff(${i})" data-idx="${i}">
+      <span class="did">${s.distRule}</span>
+      <span class="dds">${s.name}</span>
+      ${fc?'<div class="ddm">'+fc+'</div>':''}
+    </div>`;
+  }).join('');
+  dd._hits=hits;
+  dd.style.display='block';
+}
+function staffDdKey(e){
+  const dd=document.getElementById('staffDd');
+  if(!dd._hits||dd.style.display==='none') return;
+  if(e.key==='ArrowDown'){_staffHi=Math.min(_staffHi+1,dd._hits.length-1);hilightStaff();}
+  else if(e.key==='ArrowUp'){_staffHi=Math.max(_staffHi-1,0);hilightStaff();}
+  else if(e.key==='Enter'&&_staffHi>=0){pickStaff(_staffHi);e.preventDefault();}
+  else if(e.key==='Escape'){closeStaffDd();}
+}
+function hilightStaff(){
+  const dd=document.getElementById('staffDd');
+  if(!dd._hits) return;
+  dd._hits.forEach((_,i)=>{
+    const el=document.getElementById('staffdd'+i);
+    if(el) el.classList.toggle('hi',i===_staffHi);
   });
+}
+function pickStaff(idx){
+  const dd=document.getElementById('staffDd');
+  if(!dd._hits) return;
+  const s=dd._hits[idx];
+  document.getElementById('mrs_staff').value=s.name;
+  showStaffInfo(s);
+  closeStaffDd();
+}
+function showStaffInfo(s){
+  const box=document.getElementById('mrs_staff_info');
+  document.getElementById('mrs_staff_code').textContent=s.distRule;
+  document.getElementById('mrs_staff_rule').textContent='Dist. Rule: '+s.distRule;
+  const fc=document.getElementById('mrs_staff_fathercc');
+  fc.textContent=s.fatherCC?'Father CC: '+s.fatherCC:'';
+  box.style.display='flex';
+}
+function closeStaffDd(){
+  const dd=document.getElementById('staffDd');
+  dd.style.display='none';
+  const val=document.getElementById('mrs_staff').value.trim();
+  const match=STAFF.find(s=>s.name.toLowerCase()===val.toLowerCase()||s.distRule.toLowerCase()===val.toLowerCase());
+  if(match) showStaffInfo(match);
+}
+
+// ── STAFF INFO (main inventory form) ──
+function onStaffChange(selId, infoId){
+  const sel=document.getElementById(selId);
+  const code=sel.value;
+  const s=STAFF.find(x=>x.code===code);
+  const box=document.getElementById(infoId);
+  if(s && (s.distRule||s.fatherCC)){
+    document.getElementById(selId+'_code').textContent=s.distRule;
+    document.getElementById(selId+'_rule').textContent='Dist. Rule: '+s.distRule+(s.fatherCC?' | Father CC: '+s.fatherCC:'');
+    box.style.display='flex';
+  } else {
+    box.style.display='none';
+  }
 }
 
 function onMRSCluster(){
@@ -895,33 +1574,47 @@ function buildCosts(){
 }
 function buildStaff(){
   const sel=document.getElementById('f_staff');
-  sel.innerHTML='';
+  sel.innerHTML='<option value="">-- Select --</option>';
   STAFF.forEach(s=>{
-    const o=document.createElement('option');o.value=s.code;o.textContent=s.name||s.code;sel.appendChild(o);
+    const o=document.createElement('option');
+    o.value=s.code;
+    o.textContent=s.distRule+' — '+s.name+(s.fatherCC?' ['+s.fatherCC+']':'');
+    sel.appendChild(o);
   });
 }
 
 // ══ MRS ITEM TABLE ══
-function buildMRSItems(){
+let mrsRowCount=10;
+
+function buildMRSItems(count){
+  mrsRowCount=count||10;
   const tbody=document.getElementById('mrsItemBody');
   tbody.innerHTML='';
-  for(let i=1;i<=10;i++){
-    const row=document.createElement('tr');
-    row.id=`mrsrow-${i}`;
-    row.innerHTML=`
-      <td class="mrs-sno">${i}</td>
-      <td style="position:relative">
-        <input id="mcode-${i}" placeholder="Item code" autocomplete="off"
-          oninput="mrsSearch(${i})" onblur="setTimeout(()=>closeMrsDd(${i}),200)"
-          onkeydown="mrsDdKey(event,${i})">
-        <div class="ddl" id="mrsDd-${i}" style="display:none"></div>
-      </td>
-      <td><input id="mdesc-${i}" placeholder="Description of material"></td>
-      <td><input id="muom-${i}" placeholder="UOM" style="width:65px"></td>
-      <td><input id="mqty-${i}" placeholder="0" type="number" min="0" step="0.001" style="width:75px"></td>
-      <td><button class="ib" onclick="clearMRSRow(${i})" title="Clear row">✕</button></td>`;
-    tbody.appendChild(row);
-  }
+  for(let i=1;i<=mrsRowCount;i++) appendMRSRow(i,tbody);
+}
+
+function appendMRSRow(i,tbody){
+  if(!tbody)tbody=document.getElementById('mrsItemBody');
+  const row=document.createElement('tr');
+  row.id=`mrsrow-${i}`;
+  row.innerHTML=`
+    <td class="mrs-sno">${i}</td>
+    <td style="position:relative">
+      <input id="mcode-${i}" placeholder="Item code" autocomplete="off"
+        oninput="mrsSearch(${i})" onblur="setTimeout(()=>closeMrsDd(${i}),200)"
+        onkeydown="mrsDdKey(event,${i})">
+      <div class="ddl" id="mrsDd-${i}" style="display:none"></div>
+    </td>
+    <td><input id="mdesc-${i}" placeholder="Description of material"></td>
+    <td><input id="muom-${i}" placeholder="UOM" style="width:65px"></td>
+    <td><input id="mqty-${i}" placeholder="0" type="number" min="0" step="0.001" style="width:75px"></td>
+    <td><button class="ib" onclick="clearMRSRow(${i})" title="Clear row">✕</button></td>`;
+  tbody.appendChild(row);
+}
+
+function addMRSRow(){
+  mrsRowCount++;
+  appendMRSRow(mrsRowCount);
 }
 
 let mrsDdIdx={};
@@ -1032,7 +1725,7 @@ function pickItem(itemNo){
   document.getElementById('f_desc').value=it.desc;
   document.getElementById('f_uom').value=it.uom;
   document.getElementById('f_whse').value=it.whse;
-  document.getElementById('f_acct').value=it.acct;
+  document.getElementById('f_acct').value='';
   document.getElementById('f_proj').value=it.proj;
   document.getElementById('f_staff').value=it.staff||'GEN4';
   if(it.mep){
@@ -1048,7 +1741,7 @@ function pickItem(itemNo){
   document.getElementById('cp1').textContent=it.itemNo;
   document.getElementById('cp2').textContent=it.uom;
   document.getElementById('cp3').textContent=it.whse;
-  document.getElementById('cp4').textContent=it.acct;
+  document.getElementById('cp4').textContent='';
   document.getElementById('cp5').textContent=it.proj;
   document.getElementById('cp6').textContent=it.staff||'GEN4';
   document.getElementById('chipRow').style.display='flex';
@@ -1154,6 +1847,151 @@ function resetForm(){
   document.getElementById('chipRow').style.display='none';
   document.querySelectorAll('.ctile').forEach(t=>t.classList.remove('sel'));
   goStep(1);
+}
+
+// ══ SHEET SUB-TABS ══
+let activeSheetSub='slips';
+let selectedSlipIdx=-1;
+
+function switchSheetSub(sub){
+  activeSheetSub=sub;
+  ['slips','table'].forEach(s=>{
+    document.getElementById('sh-'+s).style.display=s===sub?'block':'none';
+    document.getElementById('shtab-'+s).className='stab'+(s===sub?' on':'');
+  });
+  if(sub==='slips') renderSlipList();
+  if(sub==='table') renderSheet();
+}
+
+function renderSlipList(){
+  const q=(document.getElementById('slipSrch')?.value||'').toLowerCase();
+  const from=document.getElementById('slipFrom')?.value||'';
+  const to=document.getElementById('slipTo')?.value||'';
+  const filtered=mrsList.filter(r=>{
+    const mq=!q||String(r.no).includes(q)||r.contractor.toLowerCase().includes(q)||
+      r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
+    const mf=!from||r.date>=from;
+    const mt=!to||r.date<=to;
+    return mq&&mf&&mt;
+  });
+  document.getElementById('slipCnt').textContent=filtered.length+' slips';
+  const listEl=document.getElementById('slipList');
+  const emptyEl=document.getElementById('slipEmpty');
+  if(!filtered.length){listEl.innerHTML='';emptyEl.style.display='block';
+    document.getElementById('slipDetail').style.display='none';
+    document.getElementById('exportSelBtn').style.display='none';
+    selectedSlipIdx=-1;return;}
+  emptyEl.style.display='none';
+  const idxMap=filtered.map(r=>mrsList.indexOf(r));
+  listEl.innerHTML=filtered.map((r,fi)=>{
+    const oi=idxMap[fi];
+    const d=r.date?new Date(r.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+    const itemSummary=r.rows.slice(0,3).map(x=>x.desc||x.code).filter(Boolean).join(', ')+(r.rows.length>3?'…':'');
+    const isSel=oi===selectedSlipIdx;
+    return`<div class="mrs-list-item${isSel?' sel':''}" onclick="selectSlip(${oi})" style="cursor:pointer;${isSel?'border-color:var(--acc);background:rgba(68,147,248,.06)':''}">
+      <div class="mrs-list-no">MRS #${r.no}</div>
+      <div class="mrs-list-meta">
+        <div class="mrs-list-loc" style="font-weight:600">${r.contractor||'—'} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.cluster||''}</span></div>
+        <div class="mrs-list-items">${itemSummary||'No items'}</div>
+        <div style="font-size:10px;color:var(--sub);margin-top:2px">${r.costcode?'Cost: '+r.costcode:''} ${r.staff?'· '+r.staff:''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <div class="mrs-list-date">${d}</div>
+        <div class="mrs-badge" style="display:inline-block">${r.rows.length} items</div>
+        ${isSel?'<span style="font-size:10px;color:var(--acc2);font-weight:700">● Selected</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectSlip(oi){
+  selectedSlipIdx=oi;
+  renderSlipList();
+  const r=mrsList[oi];
+  if(!r)return;
+  // Show detail panel
+  const detail=document.getElementById('slipDetail');
+  detail.style.display='block';
+  document.getElementById('exportSelBtn').style.display='inline-flex';
+  document.getElementById('slipDetailTitle').textContent=`MRS #${r.no} — ${r.contractor||''}  ·  ${r.date||''}`;
+  // Pre-fill date pickers with MRS date
+  document.getElementById('exportFrom').value=r.date||'';
+  document.getElementById('exportTo').value=r.date||'';
+  // Render items table in detail
+  const rows=r.rows.filter(x=>x.code||x.desc);
+  document.getElementById('slipDetailBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:14px">
+      ${[['Cluster',r.cluster],['Property Type',r.proptype],['Cost Code',r.costcode],['Staff',r.staff]].filter(([,v])=>v).map(([l,v])=>`
+        <div style="background:var(--s2);border-radius:4px;padding:8px 12px">
+          <div style="font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${l}</div>
+          <div style="font-size:12px;font-weight:600">${v}</div>
+        </div>`).join('')}
+    </div>
+    <div style="overflow-x:auto;border:1px solid var(--b1);border-radius:6px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;text-align:left;color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid var(--b1);width:36px">#</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid var(--b1)">Item Code</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid var(--b1)">Description</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid var(--b1)">UOM</th>
+        <th style="padding:7px 10px;text-align:left;color:var(--sub);font-size:10px;font-weight:700;text-transform:uppercase;border-bottom:2px solid var(--b1)">Qty</th>
+      </tr></thead>
+      <tbody>${rows.map((it,i)=>`<tr style="${i%2?'background:rgba(255,255,255,.02)':''}">
+        <td style="padding:6px 10px;color:var(--dim);font-family:var(--mo);font-size:10px;border-bottom:1px solid var(--b1)">${it.sr||i+1}</td>
+        <td style="padding:6px 10px;font-family:var(--mo);font-size:11px;color:var(--acc);border-bottom:1px solid var(--b1)">${it.code||''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid var(--b1)">${it.desc||''}</td>
+        <td style="padding:6px 10px;color:var(--sub);border-bottom:1px solid var(--b1)">${it.uom||''}</td>
+        <td style="padding:6px 10px;font-weight:600;color:var(--grn);border-bottom:1px solid var(--b1)">${it.qty||''}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function exportSelectedSlip(){
+  if(selectedSlipIdx<0){toast('Select a slip first','err');return;}
+  const r=mrsList[selectedSlipIdx];
+  if(!r){toast('Slip not found','err');return;}
+  const from=document.getElementById('exportFrom')?.value||'';
+  const to=document.getElementById('exportTo')?.value||'';
+  // Apply date filter to the single slip (filter by its own date)
+  if(from&&r.date<from){toast('Slip date is before the From date','err');return;}
+  if(to&&r.date>to){toast('Slip date is after the To date','err');return;}
+
+  // Build rows for this slip
+  const rows=r.rows.filter(x=>x.code||x.desc).map((it,idx)=>{
+    const masterItem=ITEMS.find(m=>m.itemNo===it.code)||null;
+    return{
+      sno:String(idx+1),
+      itemNo:it.code||'',desc:it.desc||'',uom:it.uom||'',
+      notes:`MRS #${r.no}`,qty:it.qty||'',price:'',total:'',
+      whse:masterItem?masterItem.whse:'SHC01',ord:'',acct:'',
+      proj:masterItem?masterItem.proj:'SHC-PH01',
+      dept:'',prop:r.proptype||'',clust:r.cluster||'',
+      cost:r.costcode||'',staff:r.staff||'',
+      qtywhse:'',lastprice:'',afp:'',
+      supname:r.contractor||'',supvat:'',supinv:'',supdate:r.date||'',svcode:'',
+      mrsNo:r.no,mrsDate:r.date
+    };
+  });
+  if(!rows.length){toast('No items in this slip','err');return;}
+
+  const wb=XLSX.utils.book_new();
+  // Sheet 1 — 17 cols
+  const h1=SH1_COLS.map(c=>c.hdr);
+  const d1=rows.map(row=>SH1_COLS.map(c=>row[c.key]??''));
+  const ws1=XLSX.utils.aoa_to_sheet([h1,...d1]);
+  ws1['!cols']=SH1_COLS.map(c=>({wch:c.w}));
+  XLSX.utils.book_append_sheet(wb,ws1,'Sheet1 — Inventory');
+  // Sheet 2 — 25 cols
+  const h2=SH2_COLS.map(c=>c.hdr);
+  const d2=rows.map(row=>SH2_COLS.map(c=>row[c.key]??''));
+  const ws2=XLSX.utils.aoa_to_sheet([h2,...d2]);
+  ws2['!cols']=SH2_COLS.map(c=>({wch:c.w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Sheet2 — MEP Inventory');
+
+  const dateTag=from||to?`_${from||''}${to?'_to_'+to:''}`:'';
+  XLSX.writeFile(wb,`MRS_${r.no}_${r.date}${dateTag}.xlsx`);
+  toast(`📥 MRS #${r.no} exported — ${rows.length} rows, both sheets!`);
 }
 
 // ══ SHEET RENDER ══
@@ -1269,14 +2107,11 @@ function exportSheet(){
 // ══ MRS LOGIC ══
 function switchMRS(sub){
   activeMRSSub=sub;
-  ['new','list','view'].forEach(s=>{
+  ['new','list'].forEach(s=>{
     const el=document.getElementById(`mrs-${s}`);
     const tab=document.getElementById(`mrstab-${s}`);
     if(el)el.style.display=s===sub?'block':'none';
-    if(tab){
-      tab.className='stab'+(s===sub?' on':'');
-      if(s==='view')tab.style.display=activeMRSIdx>=0?'':'none';
-    }
+    if(tab) tab.className='stab'+(s===sub?' on':'');
   });
   if(sub==='list')renderMRSList();
   if(sub==='new'){setDefaultDate();}
@@ -1284,7 +2119,7 @@ function switchMRS(sub){
 
 function getMRSRows(){
   const rows=[];
-  for(let i=1;i<=10;i++){
+  for(let i=1;i<=mrsRowCount;i++){
     const code=(document.getElementById(`mcode-${i}`)?.value||'').trim();
     const desc=(document.getElementById(`mdesc-${i}`)?.value||'').trim();
     const qty=(document.getElementById(`mqty-${i}`)?.value||'').trim();
@@ -1321,8 +2156,40 @@ function saveMRS(){
     savedAt:new Date().toISOString()
   };
   mrsList.push(record);
+
+  // Also push each MRS item row into Sheet 1 & Sheet 2
+  const mrsSheetRows=rows.map((it,idx)=>{
+    // Try to find master item for auto-filled fields
+    const masterItem=ITEMS.find(m=>m.itemNo===it.code)||null;
+    return{
+      sno:String(sheet1.length+idx+1),
+      itemNo:it.code||'',
+      desc:it.desc||'',
+      uom:it.uom||'',
+      notes:`MRS #${no}`,
+      qty:it.qty||'',
+      price:'',
+      total:'',
+      whse:masterItem?masterItem.whse:'SHC01',
+      ord:'',
+      acct:'',
+      proj:masterItem?masterItem.proj:'SHC-PH01',
+      dept:'',
+      prop:record.proptype||'',
+      clust:record.cluster||'',
+      cost:record.costcode||'',
+      staff:record.staff||'',
+      // Sheet 2 extra fields
+      qtywhse:'',lastprice:'',afp:'',
+      supname:record.contractor||'',supvat:'',supinv:'',supdate:record.date||'',svcode:'',
+      savedAt:record.savedAt,
+      mrsNo:no,mrsDate:date
+    };
+  });
+  mrsSheetRows.forEach(r=>{sheet1.push(r);sheet2.push(r);});
+
   persist();
-  toast('✅ MRS Saved!');
+  toast(`✅ MRS Saved! ${rows.length} item(s) added to Sheet 1 & Sheet 2.`);
   clearMRSForm();
   activeMRSIdx=mrsList.length-1;
   setTimeout(()=>{switchMRS('list');},300);
@@ -1333,41 +2200,28 @@ function clearMRSForm(){
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('mrs_contractor').value='';
+  document.getElementById('contractor_info').style.display='none';
   document.getElementById('mrs_cluster').value='';
   document.getElementById('mrs_proptype').value='';
   document.getElementById('mrs_costcode').value='';
   document.getElementById('mrs_staff').value='';
-  buildMRSItems();
+  document.getElementById('mrs_staff_info').style.display='none';
+  buildMRSItems(10);
   setDefaultDate();
 }
 
-function previewMRS(){
-  const no=(document.getElementById('mrs_no')?.value||'').trim();
-  const date=(document.getElementById('mrs_date')?.value||'').trim();
-  const contractor=(document.getElementById('mrs_contractor')?.value||'').trim();
-  if(!no||!date||!contractor){toast('Fill SEQ No., Date and Contractor first','err');return;}
-  const rows=getMRSRows();
-  if(!rows.length){toast('Add at least one item','err');return;}
-  const tempRecord={
-    id:-1,no,date,contractor,
-    cluster:(document.getElementById('mrs_cluster')?.value||''),
-    proptype:(document.getElementById('mrs_proptype')?.value||''),
-    costcode:(document.getElementById('mrs_costcode')?.value||''),
-    staff:(document.getElementById('mrs_staff')?.value||''),
-    rows
-  };
-  document.getElementById('mrsPreviewBox').innerHTML=renderMRSSlip(tempRecord);
-  const viewTab=document.getElementById('mrstab-view');
-  if(viewTab){viewTab.style.display='';viewTab.className='stab';}
-  switchMRS('view');
-}
 
 function renderMRSList(){
   const q=(document.getElementById('mrsSearch')?.value||'').toLowerCase();
-  const filtered=mrsList.filter(r=>
-    !q||r.no.includes(q)||r.contractor.toLowerCase().includes(q)||
-    r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q)
-  );
+  const from=document.getElementById('mrsDateFrom')?.value||'';
+  const to=document.getElementById('mrsDateTo')?.value||'';
+  const filtered=mrsList.filter(r=>{
+    const mq=!q||r.no.includes(q)||r.contractor.toLowerCase().includes(q)||
+      r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
+    const mf=!from||r.date>=from;
+    const mt=!to||r.date<=to;
+    return mq&&mf&&mt;
+  });
   document.getElementById('mrsCnt').textContent=filtered.length+' slips';
   const listEl=document.getElementById('mrsList');
   const emptyEl=document.getElementById('mrsEmpty');
@@ -1378,145 +2232,98 @@ function renderMRSList(){
     const oi=idxMap[fi];
     const itemSummary=r.rows.slice(0,3).map(x=>x.desc||x.code).filter(Boolean).join(', ')+(r.rows.length>3?'…':'');
     const d=r.date?new Date(r.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
-    return`<div class="mrs-list-item" onclick="viewMRS(${oi})">
+    return`<div class="mrs-list-item" style="cursor:default">
       <div class="mrs-list-no">MRS #${r.no}</div>
       <div class="mrs-list-meta">
         <div class="mrs-list-loc">${r.contractor||'—'} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.cluster||''}</span></div>
         <div class="mrs-list-items">${itemSummary||'No items described'}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
+      <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
         <div class="mrs-list-date">${d}</div>
-        <div class="mrs-badge" style="margin-top:4px;display:inline-block">${r.rows.length} items</div>
+        <div class="mrs-badge" style="display:inline-block">${r.rows.length} items</div>
+        <button class="btn bd bsm" style="padding:3px 9px;font-size:11px" onclick="deleteMRS(${oi})">🗑 Delete</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function viewMRS(idx){
-  activeMRSIdx=idx;
-  showMRSPreview(idx);
-  const viewTab=document.getElementById('mrstab-view');
-  if(viewTab){viewTab.style.display='';viewTab.className='stab';}
-  switchMRS('view');
-}
 
-function showMRSPreview(idx){
+function deleteMRS(idx){
+  if(idx===undefined)idx=activeMRSIdx;
+  if(idx<0||idx===undefined)return;
+  if(!confirm('Delete this MRS record? Its rows will also be removed from Sheet 1 & Sheet 2.'))return;
   const r=mrsList[idx];
-  if(!r)return;
-  document.getElementById('mrsPreviewBox').innerHTML=renderMRSSlip(r);
-}
-
-function renderMRSSlip(r){
-  const fmtDate=d=>{
-    if(!d)return'';
-    try{const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
-    catch{return d;}
-  };
-  const rows=[...r.rows];
-  while(rows.length<10)rows.push({sr:rows.length+1,code:'',desc:'',uom:'',qty:''});
-  return`
-  <div class="mrs-preview" id="mrsSlipPrint">
-    <table style="margin-bottom:0">
-      <tr class="title-row">
-        <td colspan="5" style="padding:10px;font-size:14px">ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST)</td>
-      </tr>
-      <tr>
-        <td colspan="2" style="background:#e8e8e8;font-weight:700">SEQ NO: <span style="color:#c00;font-size:13px">${r.no}</span></td>
-        <td colspan="3" style="text-align:center;font-weight:700;background:#e8e8e8;letter-spacing:1px">MRS — REQUISITION SLIP</td>
-      </tr>
-      <tr>
-        <td colspan="2"><b>DATE:</b> &nbsp;${fmtDate(r.date)}</td>
-        <td colspan="3"><b>CONTRACTOR NAME:</b> &nbsp;${r.contractor||''}</td>
-      </tr>
-      <tr>
-        <td colspan="2"><b>CLUSTER:</b> &nbsp;${r.cluster||''}</td>
-        <td colspan="2"><b>PROPERTY TYPE:</b> &nbsp;${r.proptype||''}</td>
-        <td><b>COST CODE:</b> &nbsp;${r.costcode||''}</td>
-      </tr>
-      <tr>
-        <td colspan="5"><b>STAFF NAME / ASSETS:</b> &nbsp;${r.staff||''}</td>
-      </tr>
-      <tr class="hdr-row">
-        <td style="width:36px">S.M.</td>
-        <td style="min-width:120px">ITEM CODE</td>
-        <td style="min-width:240px">DESCRIPTION OF MATERIAL</td>
-        <td style="width:60px">UOM</td>
-        <td style="width:60px">QTY</td>
-      </tr>
-      ${rows.map((row,i)=>`<tr>
-        <td style="text-align:center;color:#666">${i+1}</td>
-        <td style="font-family:monospace;font-size:9px">${row.code||''}</td>
-        <td>${row.desc||''}</td>
-        <td style="text-align:center">${row.uom||''}</td>
-        <td style="text-align:center">${row.qty||''}</td>
-      </tr>`).join('')}
-    </table>
-  </div>`;
-}
-
-function printMRS(){
-  const box=document.getElementById('mrsPreviewBox');
-  if(!box)return;
-  const w=window.open('','_blank','width=900,height=700');
-  w.document.write(`<!DOCTYPE html><html><head><title>MRS Print</title>
-  <style>
-    body{font-family:Arial,sans-serif;margin:20px;font-size:11px}
-    table{width:100%;border-collapse:collapse}
-    td,th{border:1px solid #000;padding:4px 8px;font-size:10px}
-    .title-row td{text-align:center;font-weight:700;font-size:14px;background:#1c3a6b;color:#fff}
-    .hdr-row td{background:#e8e8e8;font-weight:700;font-size:10px;text-align:center}
-    .sig-row td{border:none;padding-top:8px;font-size:9px;vertical-align:top}
-    @media print{@page{margin:10mm}}
-  </style></head><body>
-  ${box.innerHTML}
-  <scr'+'ipt>window.onload=()=>window.print()<'+'/script>
-  </body></html>`);
-  w.document.close();
-}
-
-function deleteMRS(){
-  if(activeMRSIdx<0)return;
-  if(!confirm('Delete this MRS record?'))return;
-  mrsList.splice(activeMRSIdx,1);
+  sheet1=sheet1.filter(row=>row.mrsNo!==r.no);
+  sheet2=sheet2.filter(row=>row.mrsNo!==r.no);
+  mrsList.splice(idx,1);
   activeMRSIdx=-1;
   persist();
-  toast('MRS deleted');
-  const viewTab=document.getElementById('mrstab-view');
-  if(viewTab)viewTab.style.display='none';
-  switchMRS('list');
+  toast('MRS deleted and sheet rows removed');
+  renderMRSList();
 }
 
-function exportMRSSingle(){
-  if(activeMRSIdx<0)return;
-  const r=mrsList[activeMRSIdx];
-  exportMRSToExcel([r],`MRS_${r.no}_${r.date}.xlsx`);
-}
-
-function exportMRSExcel(){
-  if(!mrsList.length){toast('No MRS records','err');return;}
-  exportMRSToExcel(mrsList,`SHC-PH01_MRS_All_${new Date().toISOString().slice(0,10)}.xlsx`);
-}
-
-function exportMRSToExcel(records,filename){
-  const wb=XLSX.utils.book_new();
-  records.forEach(r=>{
-    const hdr=['S.M.','ITEM CODE','DESCRIPTION OF MATERIAL','UOM','QTY'];
-    const meta=[
-      ['ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST) — MRS REQUISITION SLIP'],
-      [`SEQ NO: ${r.no}`,`DATE: ${r.date}`],
-      [`CONTRACTOR: ${r.contractor}`],
-      [`CLUSTER: ${r.cluster}`,`PROPERTY TYPE: ${r.proptype}`,`COST CODE: ${r.costcode}`],
-      [`STAFF NAME / ASSETS: ${r.staff}`],
-      [],
-      hdr,
-      ...r.rows.map(row=>[row.sr,row.code,row.desc,row.uom,row.qty]),
-    ];
-    const ws=XLSX.utils.aoa_to_sheet(meta);
-    ws['!cols']=[{wch:8},{wch:18},{wch:45},{wch:10},{wch:10}];
-    XLSX.utils.book_append_sheet(wb,ws,`MRS-${r.no}`.slice(0,31));
+function exportFilteredMRSToSheets(){
+  const q=(document.getElementById('mrsSearch')?.value||'').toLowerCase();
+  const from=document.getElementById('mrsDateFrom')?.value||'';
+  const to=document.getElementById('mrsDateTo')?.value||'';
+  const filtered=mrsList.filter(r=>{
+    const mq=!q||r.no.includes(q)||r.contractor.toLowerCase().includes(q)||
+      r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
+    const mf=!from||r.date>=from;
+    const mt=!to||r.date<=to;
+    return mq&&mf&&mt;
   });
-  XLSX.writeFile(wb,filename);
-  toast('📥 MRS Excel exported!');
+  if(!filtered.length){toast('No MRS records match the current filter','err');return;}
+
+  // Build flat rows from filtered MRS records
+  const rows=[];
+  filtered.forEach(r=>{
+    r.rows.forEach((it,i)=>{
+      const masterItem=ITEMS.find(m=>m.itemNo===it.code)||null;
+      rows.push({
+        sno:String(rows.length+1),
+        itemNo:it.code||'',
+        desc:it.desc||'',
+        uom:it.uom||'',
+        notes:`MRS #${r.no}`,
+        qty:it.qty||'',
+        price:'',
+        total:'',
+        whse:masterItem?masterItem.whse:'SHC01',
+        ord:'',
+        acct:'',
+        proj:masterItem?masterItem.proj:'SHC-PH01',
+        dept:'',
+        prop:r.proptype||'',
+        clust:r.cluster||'',
+        cost:r.costcode||'',
+        staff:r.staff||'',
+        qtywhse:'',lastprice:'',afp:'',
+        supname:r.contractor||'',supvat:'',supinv:'',supdate:r.date||'',svcode:'',
+        mrsNo:r.no,mrsDate:r.date
+      });
+    });
+  });
+
+  const wb=XLSX.utils.book_new();
+
+  // Sheet 1
+  const h1=SH1_COLS.map(c=>c.hdr);
+  const d1=rows.map(r=>SH1_COLS.map(c=>r[c.key]??''));
+  const ws1=XLSX.utils.aoa_to_sheet([h1,...d1]);
+  ws1['!cols']=SH1_COLS.map(c=>({wch:c.w}));
+  XLSX.utils.book_append_sheet(wb,ws1,'Sheet1 — Inventory');
+
+  // Sheet 2
+  const h2=SH2_COLS.map(c=>c.hdr);
+  const d2=rows.map(r=>SH2_COLS.map(c=>r[c.key]??''));
+  const ws2=XLSX.utils.aoa_to_sheet([h2,...d2]);
+  ws2['!cols']=SH2_COLS.map(c=>({wch:c.w}));
+  XLSX.utils.book_append_sheet(wb,ws2,'Sheet2 — MEP Inventory');
+
+  const dateTag=(from||to)?`_${from||''}${to?'_to_'+to:''}`:'_All';
+  XLSX.writeFile(wb,`SHC-PH01_MRS_Sheets${dateTag}.xlsx`);
+  toast(`📥 Exported ${rows.length} rows from ${filtered.length} MRS slip(s)!`);
 }
 
 // ══ DASHBOARD ══
@@ -1627,7 +2434,7 @@ function renderDash(){
           <button class="btn bg bsm" onclick="gotoTab('mrs');switchMRS(\'list\')">View All →</button>
         </div>
         ${recentMRS.length?recentMRS.map((r,i)=>`
-          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b1);cursor:pointer" onclick="gotoTab('mrs');viewMRS(${mrsList.indexOf(r)})">
+          <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b1);cursor:pointer" onclick="gotoTab('mrs');switchMRS('list')">
             <div style="font-family:var(--mo);font-size:12px;color:var(--pur);font-weight:700;min-width:50px">#${r.no}</div>
             <div style="flex:1;overflow:hidden">
               <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.contractor||'—'}</div>
@@ -1645,8 +2452,8 @@ function gotoTab(t){
   document.querySelectorAll('.ntab').forEach(n=>n.classList.remove('on'));
   document.getElementById('pg-'+t).classList.add('on');
   document.getElementById('tab-'+t).classList.add('on');
-  if(t==='sheet'){switchSheet(activeSheet);}
-  if(t==='mrs'){switchMRS(activeMRSSub==='view'&&activeMRSIdx>=0?'view':activeMRSSub==='list'?'list':'new');}
+  if(t==='sheet'){switchSheetSub(activeSheetSub);}
+  if(t==='mrs'){switchMRS(activeMRSSub==='list'?'list':'new');}
   if(t==='dash'){renderDash();}
 }
 
