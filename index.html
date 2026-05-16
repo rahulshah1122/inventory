@@ -417,59 +417,66 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
   <!-- NEW MRS -->
   <div id="mrs-new">
     <div class="card">
-      <div class="chdr">📋 Site Material Requisition Slip — ABCON / BOGEST</div>
+      <div class="chdr">📋 MRS — Requisition Slip<span id="mrsCatBadge"></span></div>
 
-      <!-- Header info -->
-      <div class="mrs-header-row">
+      <!-- Header info matching the sketch -->
+      <div class="fg2" style="margin-bottom:13px">
         <div class="fg">
-          <div class="fl">MRS No. <span class="r">*</span></div>
+          <div class="fl">SEQ NO. <span class="r">*</span></div>
           <input id="mrs_no" placeholder="e.g. 12078" type="number">
         </div>
         <div class="fg">
           <div class="fl">Date <span class="r">*</span></div>
           <input id="mrs_date" type="date">
         </div>
+      </div>
+
+      <div class="fg" style="margin-bottom:13px">
+        <div class="fl">Contractor Name <span class="r">*</span></div>
+        <select id="mrs_contractor">
+          <option value="">-- Select Contractor --</option>
+        </select>
+      </div>
+
+      <div class="fg2" style="margin-bottom:13px">
         <div class="fg">
-          <div class="fl">Contractor Name</div>
-          <input id="mrs_contractor" value="ABCON" placeholder="Contractor">
+          <div class="fl">Cluster <span class="r">*</span></div>
+          <select id="mrs_cluster" onchange="onMRSCluster()">
+            <option value="">-- Select Cluster --</option>
+          </select>
         </div>
         <div class="fg">
-          <div class="fl">Location / Cluster <span class="r">*</span></div>
-          <select id="mrs_location">
+          <div class="fl">Property Type <span class="a">auto from cluster</span></div>
+          <input id="mrs_proptype" class="af" readonly placeholder="Auto-filled on cluster select">
+        </div>
+      </div>
+
+      <div class="fg2" style="margin-bottom:13px">
+        <div class="fg">
+          <div class="fl">Cost Code</div>
+          <select id="mrs_costcode">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="fg">
+          <div class="fl">Staff Name / Assets</div>
+          <select id="mrs_staff">
             <option value="">-- Select --</option>
           </select>
         </div>
       </div>
 
-      <div class="fg2" style="margin-bottom:16px">
-        <div class="fg">
-          <div class="fl">Free / Return Label / Rental / Chargable</div>
-          <select id="mrs_type">
-            <option value="Chargable">Chargable</option>
-            <option value="Free">Free</option>
-            <option value="Return label">Return label</option>
-            <option value="Rental">Rental</option>
-          </select>
-        </div>
-        <div class="fg">
-          <div class="fl">Remarks / Notes</div>
-          <input id="mrs_remarks" placeholder="General remarks for this slip">
-        </div>
-      </div>
-
-      <!-- Items table -->
+      <!-- Items table matching the sketch: S.M. | Item Code | Description of Material | UOM | Qty -->
       <div class="sectlabel">📦 Material Items (up to 10 rows)</div>
       <div style="overflow-x:auto">
       <table class="mrs-table" id="mrsItemTable">
         <thead>
           <tr>
-            <th style="width:36px">SR</th>
-            <th style="min-width:130px">Item Code</th>
-            <th style="min-width:280px">Description of Material</th>
-            <th style="width:70px">UOM</th>
+            <th style="width:36px">S.M.</th>
+            <th style="min-width:140px">Item Code</th>
+            <th style="min-width:300px">Description of Material</th>
+            <th style="width:75px">UOM</th>
             <th style="width:80px">Qty</th>
-            <th style="width:100px">Cost Code</th>
-            <th style="min-width:150px">Remarks</th>
             <th style="width:36px"></th>
           </tr>
         </thead>
@@ -477,18 +484,9 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
       </table>
       </div>
 
-      <!-- Signatures -->
-      <div class="sectlabel" style="margin-top:16px">✍️ Signatures</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:16px">
-        <div class="fg"><div class="fl">Requested By</div><input id="sig_req" placeholder="Name"></div>
-        <div class="fg"><div class="fl">Approved By Foreman</div><input id="sig_fmn" placeholder="Name"></div>
-        <div class="fg"><div class="fl">Approved By Engineer</div><input id="sig_eng" placeholder="Name"></div>
-        <div class="fg"><div class="fl">Receiving Sign</div><input id="sig_rcv" placeholder="Name"></div>
-      </div>
-
       <div class="brow">
         <button class="btn bg" onclick="clearMRSForm()">🗑 Clear</button>
-        <button class="btn bpur" onclick="previewMRS()">👁 Preview Slip</button>
+        <button class="btn bpur" onclick="openScanModal()">📷 Scan Slip</button>
         <button class="btn bs" onclick="saveMRS()">💾 Save MRS</button>
       </div>
     </div>
@@ -536,9 +534,208 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 </div>
 </div>
 
+<!-- ═══════════════════════════ SCAN MODAL ═══════════════════════════ -->
+<div id="scanModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center">
+  <div style="background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:28px;width:min(540px,95vw);max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="closeScanModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:var(--sub);font-size:18px;cursor:pointer;line-height:1">✕</button>
+    <div style="font-size:15px;font-weight:700;color:var(--txt);margin-bottom:6px">📷 Scan MRS Slip</div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:18px">Take a photo of an existing MRS slip or upload an image — AI will extract and auto-fill all fields.</div>
+
+    <!-- Drop zone -->
+    <div id="scanDropzone" onclick="document.getElementById('scanFileInput').click()"
+      style="border:2px dashed var(--b2);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;position:relative">
+      <div style="font-size:32px;margin-bottom:8px">📄</div>
+      <div style="font-size:13px;font-weight:600;color:var(--acc2)">Click to upload or drag & drop</div>
+      <div style="font-size:11px;color:var(--sub);margin-top:4px">JPG, PNG, HEIC — camera or file</div>
+      <input id="scanFileInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="onScanFile(event)">
+    </div>
+
+    <!-- Preview -->
+    <div id="scanPreviewWrap" style="display:none;margin-bottom:16px">
+      <img id="scanPreviewImg" style="width:100%;border-radius:6px;border:1px solid var(--b1);max-height:260px;object-fit:contain">
+    </div>
+
+    <!-- Status -->
+    <div id="scanStatus" style="display:none;padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:12px"></div>
+
+    <!-- Extracted preview table -->
+    <div id="scanResultBox" style="display:none;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:var(--grn);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">✅ Extracted Data — Review Before Applying</div>
+      <div id="scanResultTable" style="background:var(--s2);border:1px solid var(--b1);border-radius:6px;padding:12px;font-size:12px"></div>
+    </div>
+
+    <div style="display:flex;gap:9px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn bg" onclick="closeScanModal()">Cancel</button>
+      <button class="btn bpur" id="scanBtn" onclick="runScan()" disabled style="opacity:.5">🤖 Extract with AI</button>
+      <button class="btn bs" id="applyBtn" onclick="applyScanned()" style="display:none">✅ Apply to Form</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" style="display:none"></div>
 
 <script>
+// ══ SCAN MODAL ══
+let scanBase64=null,scanMime=null,scannedData=null;
+
+function openScanModal(){
+  document.getElementById('scanModal').style.display='flex';
+  scanBase64=null;scanMime=null;scannedData=null;
+  document.getElementById('scanPreviewWrap').style.display='none';
+  document.getElementById('scanStatus').style.display='none';
+  document.getElementById('scanResultBox').style.display='none';
+  document.getElementById('applyBtn').style.display='none';
+  const btn=document.getElementById('scanBtn');
+  btn.disabled=true;btn.style.opacity='.5';
+}
+function closeScanModal(){
+  document.getElementById('scanModal').style.display='none';
+}
+
+// Drag-drop
+const dz=document.getElementById('scanDropzone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--acc)';dz.style.background='rgba(68,147,248,.07)'});
+dz.addEventListener('dragleave',()=>{dz.style.borderColor='var(--b2)';dz.style.background='';});
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='var(--b2)';dz.style.background='';const f=e.dataTransfer.files[0];if(f)loadScanFile(f);});
+
+function onScanFile(e){const f=e.target.files[0];if(f)loadScanFile(f);}
+
+function loadScanFile(file){
+  scanMime=file.type||'image/jpeg';
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    scanBase64=dataUrl.split(',')[1];
+    document.getElementById('scanPreviewImg').src=dataUrl;
+    document.getElementById('scanPreviewWrap').style.display='block';
+    document.getElementById('scanResultBox').style.display='none';
+    document.getElementById('applyBtn').style.display='none';
+    document.getElementById('scanStatus').style.display='none';
+    const btn=document.getElementById('scanBtn');
+    btn.disabled=false;btn.style.opacity='1';
+    scannedData=null;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runScan(){
+  if(!scanBase64){toast('Upload an image first','err');return;}
+  const btn=document.getElementById('scanBtn');
+  btn.disabled=true;btn.style.opacity='.5';btn.textContent='⏳ Extracting…';
+  const st=document.getElementById('scanStatus');
+  st.style.display='block';
+  st.style.background='rgba(68,147,248,.1)';
+  st.style.color='var(--acc2)';
+  st.textContent='🤖 AI is reading the slip — please wait…';
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:scanMime,data:scanBase64}},
+            {type:'text',text:`Extract all data from this MRS (Material Requisition Slip) form image. Return ONLY a JSON object with NO markdown, no backticks, no extra text. Schema:
+{
+  "mrs_no": "sequence number as string",
+  "date": "date in YYYY-MM-DD format",
+  "contractor": "contractor name",
+  "cluster": "cluster code e.g. CLST-100",
+  "costcode": "cost code e.g. 1000",
+  "staff": "staff name or code",
+  "items": [
+    {"sr":1,"code":"item code","desc":"description of material","uom":"unit","qty":"quantity as string"}
+  ]
+}
+Only include items that have at least a description or code. If a field is unclear, use empty string.`}
+          ]
+        }]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content.map(i=>i.text||'').join('');
+    const clean=raw.replace(/```json|```/g,'').trim();
+    scannedData=JSON.parse(clean);
+
+    // Show extracted result
+    const rt=document.getElementById('scanResultTable');
+    rt.innerHTML=`
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <tr><td style="color:var(--sub);padding:3px 8px;width:120px">MRS No.</td><td style="color:var(--acc2);font-weight:600;padding:3px 8px">${scannedData.mrs_no||'—'}</td>
+            <td style="color:var(--sub);padding:3px 8px;width:80px">Date</td><td style="padding:3px 8px">${scannedData.date||'—'}</td></tr>
+        <tr><td style="color:var(--sub);padding:3px 8px">Contractor</td><td style="padding:3px 8px" colspan="3">${scannedData.contractor||'—'}</td></tr>
+        <tr><td style="color:var(--sub);padding:3px 8px">Location</td><td style="padding:3px 8px" colspan="3">${scannedData.location||'—'}</td></tr>
+        <tr><td style="color:var(--sub);padding:3px 8px">Type</td><td style="padding:3px 8px" colspan="3">${scannedData.type||'—'}</td></tr>
+        ${scannedData.remarks?`<tr><td style="color:var(--sub);padding:3px 8px">Remarks</td><td style="padding:3px 8px" colspan="3">${scannedData.remarks}</td></tr>`:''}
+      </table>
+      <div style="margin-top:10px;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px">Items (${(scannedData.items||[]).length})</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <tr style="background:rgba(68,147,248,.08)"><th style="padding:4px 6px;text-align:left;font-weight:600;color:var(--sub);font-size:10px">#</th><th style="padding:4px 6px;text-align:left;font-weight:600;color:var(--sub);font-size:10px">Code</th><th style="padding:4px 6px;text-align:left;font-weight:600;color:var(--sub);font-size:10px">Description</th><th style="padding:4px 6px;text-align:left;font-weight:600;color:var(--sub);font-size:10px">UOM</th><th style="padding:4px 6px;text-align:left;font-weight:600;color:var(--sub);font-size:10px">Qty</th></tr>
+        ${(scannedData.items||[]).map((it,i)=>`<tr style="${i%2?'background:rgba(255,255,255,.02)':''}">
+          <td style="padding:4px 6px;color:var(--dim)">${it.sr||i+1}</td>
+          <td style="padding:4px 6px;font-family:monospace;color:var(--acc);font-size:10px">${it.code||''}</td>
+          <td style="padding:4px 6px">${it.desc||''}</td>
+          <td style="padding:4px 6px;color:var(--sub)">${it.uom||''}</td>
+          <td style="padding:4px 6px;font-weight:600;color:var(--grn)">${it.qty||''}</td>
+        </tr>`).join('')}
+      </table>`;
+    document.getElementById('scanResultBox').style.display='block';
+    st.style.background='rgba(63,185,80,.1)';
+    st.style.color='var(--grn)';
+    st.textContent=`✅ Extracted ${(scannedData.items||[]).length} items — review above then click Apply.`;
+    document.getElementById('applyBtn').style.display='inline-flex';
+  }catch(err){
+    st.style.background='rgba(248,81,73,.1)';
+    st.style.color='var(--red)';
+    st.textContent='❌ Could not extract data. Try a clearer image. ('+err.message+')';
+  }
+  btn.disabled=false;btn.style.opacity='1';btn.textContent='🤖 Extract with AI';
+}
+
+function applyScanned(){
+  if(!scannedData){return;}
+  // Fill header fields
+  if(scannedData.mrs_no) document.getElementById('mrs_no').value=scannedData.mrs_no;
+  if(scannedData.date) document.getElementById('mrs_date').value=scannedData.date;
+  if(scannedData.contractor){
+    const cs=document.getElementById('mrs_contractor');
+    for(let o of cs.options){if(o.value===scannedData.contractor){cs.value=scannedData.contractor;break;}}
+  }
+  if(scannedData.cluster){
+    const cl=document.getElementById('mrs_cluster');
+    for(let o of cl.options){if(o.value===scannedData.cluster){cl.value=scannedData.cluster;onMRSCluster();break;}}
+  }
+  if(scannedData.costcode){
+    const cc=document.getElementById('mrs_costcode');
+    for(let o of cc.options){if(o.value===scannedData.costcode){cc.value=scannedData.costcode;break;}}
+  }
+  if(scannedData.staff){
+    const st=document.getElementById('mrs_staff');
+    for(let o of st.options){if(o.value===scannedData.staff||o.textContent===scannedData.staff){st.value=o.value;break;}}
+  }
+  // Rebuild rows with scanned items
+  buildMRSItems();
+  const items=scannedData.items||[];
+  items.slice(0,10).forEach((it,i)=>{
+    const r=i+1;
+    if(document.getElementById(`mcode-${r}`)) document.getElementById(`mcode-${r}`).value=it.code||'';
+    if(document.getElementById(`mdesc-${r}`)) document.getElementById(`mdesc-${r}`).value=it.desc||'';
+    if(document.getElementById(`muom-${r}`)) document.getElementById(`muom-${r}`).value=it.uom||'';
+    if(document.getElementById(`mqty-${r}`)) document.getElementById(`mqty-${r}`).value=it.qty||'';
+    if(document.getElementById(`mremark-${r}`)) document.getElementById(`mremark-${r}`).value=it.remark||'';
+    if(it.cost&&document.getElementById(`mcost-${r}`)){
+      const cs=document.getElementById(`mcost-${r}`);
+      for(let o of cs.options){if(o.value===it.cost){cs.value=it.cost;break;}}
+    }
+  });
+  closeScanModal();
+  toast(`✅ Auto-filled from scan — ${items.length} items imported!`);
+}
+
 // ══════════════════════════════════════════════════════════════════
 // MASTER DATA (truncated for clarity — full dataset embedded below)
 // ══════════════════════════════════════════════════════════════════
@@ -549,6 +746,8 @@ const STAFF=[{"code":"GEN4","name":"GEN4 — General"},{"code":"46","name":"SIBY
 const CMAP={"10-100-1":"VL-TYP-C","10-100-2":"VL-TYP-C","10-100-3":"VL-TYP-C","10-100-4":"VL-TYP-C","10-100-5":"VL-TYP-C","10-101-1":"VL-SDV","10-101-2":"VL-SDV","10-101-3":"VL-SDV","10-102-1":"VL-TYP-C","10-102-2":"VL-TYP-C","10-102-3":"VL-TYP-C","10-103-1":"VL-SDV","10-103-2":"VL-SDV","10-103-3":"VL-SDV","10-104-1":"VL-TYP-C","10-104-2":"VL-TYP-C","10-105-1":"VL-TYP-A","10-105-2":"VL-TYP-A","10-105-3":"VL-TYP-A","10-105-4":"VL-TYP-A","10-105-5":"VL-TYP-A","10-105-6":"VL-TYP-A","10-105-7":"VL-TYP-A","10-105-8":"VL-TYP-A","10-106-1":"VL-SDV","10-106-2":"VL-SDV","10-106-3":"VL-SDV","10-107-1":"VL-5","10-107-2":"VL-5","10-107-3":"VL-5","10-108-1":"VL-5","10-108-2":"VL-5","10-109-1":"VL-5","10-130-1":"VL-TYP-B","10-130-2":"VL-TYP-B","10-131-1":"VL-TYP-B","10-131-2":"VL-TYP-B","10-132-1":"VL-TYP-B","10-133-1":"VL-TYP-B","10-134-1":"VL-TYP-B","10-135-1":"VL-TYP-B","10-94-1":"VL-TYP-B","10-94-2":"VL-TYP-B","10-94-3":"VL-TYP-B","10-95-1":"VL-TYP-B","10-95-2":"VL-TYP-B","10-96-1":"VL-TYP-B","10-97-1":"VL-TYP-B","10-97-2":"VL-TYP-B","10-98-1":"VL-TYP-C","10-98-2":"VL-TYP-C","10-99-1":"VL-SDV","10-99-2":"VL-SDV","CLS94/95":"VL-TYP-B","CLS96/97":"VL-TYP-B","CLST-100":"VL-TYP-C","CLST-101":"VL-SDV","CLST-102":"VL-TYP-C","CLST-103":"VL-SDV","CLST-104":"VL-TYP-C","CLST-105":"VL-TYP-A","CLST-106":"VL-SDV","CLST-107":"VL-5","CLST-108":"VL-5","CLST-109":"VL-5","CLST-13":"VL-TYP-A","CLST-130":"VL-TYP-B","CLST-131":"VL-TYP-B","CLST-132":"VL-TYP-B","CLST-133":"VL-TYP-B","CLST-134":"VL-TYP-B","CLST-135":"VL-TYP-B","CLST-15":"VL-TYP-A","CLST-17":"VL-TYP-A","CLST-20":"VL-TYP-A","CLST-21":"VL-TYP-C","CLST-22":"VL-TYP-A","CLST-23":"VL-TYP-C","CLST-24":"VL-TYP-A","CLST-25":"VL-TYP-C","CLST-26":"VL-TYP-C","CLST-98":"VL-TYP-C","CLST-99":"VL-SDV"};
 
 const CCODES=[["1000","Prelims"],["1001","Site Mobilization"],["1002","Site Office & Administration"],["1003","Utilities & Temporary Facilities"],["1004","Safety & Security"],["1005","Scaffolding / Access"],["1006","Temporary Road/Site Clearance"],["1007","Insurance / Bonds / Permits"],["1008","Environmental/Waste Management"],["1009","Testing & Quality Control"],["1010","Stationery & Admin Consumables"],["1011","Camp Running"],["1012","Staff Accommodation"],["1013","Cleaning & Cafeteria"],["1014","Tradesman Transportation"],["1015","Staff Transportation"],["1016","Staff Salary"],["1017","Hiring Cost"],["1021","Others"],["1100","Plastering"],["1200","Painting & Decorations"],["1300","Waterproofing-SuperStructure"],["1400","Tileworks (All Area)"],["1500","Ceiling Finishes"],["1600","Doors & Windows"],["1700","Handrails & Balustrade"],["1800","Kitchen Cabin & Vanity Units"],["1900","MEP"],["2000","Excavation & Disposal"],["2100","HVAC"],["2200","External MEP & Irrigation"],["2300","Boundary Wall"],["2400","Interlock Tiles"],["2500","Kerbstone"],["2600","Landscaping"],["2700","Builders Works"],["2800","Cleaning & Handing Over"],["2900","Consumable Items"],["3000","Backfilling"],["3100","General Works"],["3600","Tower Crane Cost"],["4700","Hand/Power Tools"],["4800","Equipment Maintenance"],["5000","Foundations Incl Ground Slab"],["6000","Waterproofing-Substructure"],["7000","Masonry Works-SubStructure"],["8000","Concreting-SuperStructure"],["9000","Masonry Works-SuperStructure"],["FIXA","Fixed Asset"],["GEN3","GENERAL"],["VARI","VARIATION"]];
+
+const CONTRACTORS=["A & H LLC", "Abdul Rahman adel for Trade & Investment SPC", "Abu Dana Al Rashidi Trading Co.", "ABU TAIMOR AL RAISI TRAD. LLC.", "Advance Innovative Services & Contracting LLC", "ADVANCED ENGINEERING & BUILDING MATERIALS COMPANY LLC", "Advanced Safety Solutions", "Afaq Al Magd", "AFAQ for Multiple Investments SPC", "AHMED BINSAID SATINERY", "AL - RUBHAN TRAD.", "AL AMANA BUILDING MATERIALS CO LLC", "AL Amrat Contracting & Business LLC", "Al Ansari", "Al Anwar Ceramic Tiles Co. SAOG", "al ariq equipment llc", "AL DANUBE BUILDING MATERIAL AND TRADING CO LLC.", "AL ESTIQRAR TRADING & INVESTMENT", "AL GURG CO LLC", "AL HARIB NATIONAL PROJECTS", "AL HASHAR & CO LLC", "Al Hayat Genaral Trade and Investment SPC", "AL HILAL INTEGRATED INTERNATIONAL LLC", "Al Hinai United Project", "Al Huda International United Company SPC", "AL INMA BUILDING MATERIAL LLC", "AL JASSAR LLC", "AL JIZZI COMPANY LLC", "AL JOUD TRANSPORT & TRADE", "AL JOUD TRANSPORT & TRADE", "AL JOUD TRANSPORT & TRADE", "AL KABBANI INTERNATIONAL TRADING LLC", "AL KHALILI SPECIALIZED PROJECTS LLC", "AL KHALILI UNITED ENTERPRISES LLC", "AL KIYUMI INTEGRATED ENTERPRISES LLC", "AL KIYUMI SWITCHGEAR LLC", "Al Laith Building Cont. Business and Investment LLC", "AL MAWALEH GOLDEN SAND TRAD.", "AL MUHIT LOGISTIC SPC", "AL MURAD INTERNATIONAL CO. LLC", "Al Mustafa Engineering and Contracting LLC", "AL NASR SAFETY SERVICES", "AL NASR TRADING & CONTRACTING LLC", "Al Nehad Engineering Trad. & Cont. LLC", "AL OMRAN LINE UNITED LLC", "Al Safwa Al Jadeeda Contracting", "Al Sameem International", "Al Siyabi Trading", "AL TASNIM CEMENT PRODUCTS LLC", "AL TASNIM MIDDLE EAST LLC", "AL YUSR INTERNATIONAL LLC", "ALFURQAN ALSHAMILA", "Ali Alhossino for Investment LLC", "Alraisi Group Int. COM SPC", "AMJAD AL MARA TRADING", "Antoin Assy Trading LLC", "APTUS INFOTECH (ORIENTAL ORYX INTERNATIONAL LLC)", "Arab Dream Construction Contracting", "Arhab Trading Est.", "ASSARAIN CONCRETE PRODUCTS & TRADING LLC", "Atras International Trading & Services SPC", "Bahwan Projects & Telecom LLC", "BEST CHOICE CERAMICS", "Best Solutions for businesses LLC", "Bin Hammed Construction LLC", "BIN SALIM ENTERPRISES LLC", "BLUE EAGLE LOGISTICS LLC", "BS Design & Contracting", "Bunyan technical Services LLC", "Business House for Trade and Investment SPC", "CASH PURCHASE", "CHAINLINK FENCING CO. LLC", "CONCEPT INTERNATIONAL LLC", "Crystal Flash LLC", "DAS INVESTMENT & TRANSPORT CO. LLC", "Desert Investment LLC", "DIGITAL TECHNOLOGY IT SOLUTIONS", "DUCAB MUSCAT LLC", "Durrat Al Safwa International LLC", "East & West Trading & Contracting SPC", "Eco Sense Engineering Services LLC", "EINT AUTOMOTIVE LLC", "Elmallah International Investment", "ENGINEERS WITH OUT BORDERS CONSULTANTS", "EUROTECH  INTERNATIONAL LLC", "EXCEL TECHNICAL & INDUSTRIAL SUPPLIES LLC", "EXPANDED METAL MANUFACTURING CO. SPC", "Fahmy Furniture L.L.C", "Fairdeal Trading & Contracting LLC", "Faisal Wesal Trading and Business LLC", "FIXLINE PRODUCTS LIMITED LLC", "FUTURE OILFIELD SUPPLY & SERVICES LLC", "Future Technology for Investment LLC", "G.E.M TRADING & SERVICES LLC", "Ghalib Projects Trading LLC", "GLOBAL LANDSCAPE DESIGNERS SPC", "Global Precast Industries LLC", "Golden Arch Developments", "GOLDEN DISTINGUISHED TRAD", "GOLDEN INTERNATIONAL EST. LLC", "GREENLAND EQUIPMENTS & MACHINERY", "GULF INTERNATIONAL CHEMICALS SAOG", "GULF MODERN BUSINESS", "GULF SERVICE & INDUSTRIAL SUPPLIEES CO. LLC", "Hamood Bin Hamed Al Qatiti Trad", "Hanna International", "HONGKONG TITANJING LIMITED", "HONKONG TIANJING LIMITED", "IBN YASER AL RASHDI TRADING", "Ibrahim Al Malah", "INFINITY DESIGN STUDIO", "INFINITY NATIONAL LLC", "INMA CO. OMAN LLC", "Innovation for Design & Investment", "International Rose LLC", "Jana Trading LLC", "Jibreen International Business LLC", "JOTUN PAINTS LLC", "KANZ INTERNATIONAL PROJECTS & TECHNICAL SERVICES LLC", "Khaled Khair Trad SPC", "KHAN TRADING & CONSTRUCTON COMPANY LLC", "KHIMJI RAMDAS GROUP", "Khoday Qal & Muhammad Trad. LLC", "KHURSHID TECHNICAL CO LLC", "Kosr & Sohag Business Trading LLC", "Leading Global Development and Service LLC", "LUMBER WORLD BUILDING MATERIAL LLC", "MAC AL GURG LLC", "Majan Equipment and Services Compan L.L.C", "Majan Modern Solutions", "MAJID WATER COOLER & AIR CONDITIONING CO. LLC", "Makers Al Khair Trading", "Marassi International for Investment LLC", "Marassi International for Investment LLC", "MARMUL TOWER INTERNATIONAL LLC", "MARVEL NATIONAL LLC", "MIDDLE EAST MEDIA&ADVERTISING", "MIDEA MBT - PHOENIX TRADING AND INVESTMENT LLC", "MODERN DIAMOND ENT.", "MODERN DREAM LINE", "Modern Gulf Minerals Trading & Contracting LLC", "Mohammad Taysser for Business Building Contracting", "MOHAMMED RIAZ & PARTNER LLC", "MOHSIN HAIDER DARWISH LLC", "MOOSA ABDUL RAHMAN HASSAN&CO LLC", "MUEPRO MIDDLE EAST FZE", "Muhammed Istheyaque Khan Trading SPC", "MUNA NOOR MANUFACTURING & TRADING LLC", "MUSCAT HEATERS INDUSTRY LLC", "MUSCAT OVERSEAS EQUIPMENT TRADING CO LLC", "NAJAM AL ZAHRA TRADING", "Nandani Construction SPC", "Naseem Wadi Bani Hani", "NASER GUL BEK AL BALUSHI", "NASSRULLAH BIN MOHAMED AL-AMRY TRADING", "NATIONAL CABLE FACTORY LLC", "NATIONAL PLASTIC FACTORY LLC", "NEW HOME WORLD PROJECTS SPC", "NEW STAR LINE LLC", "NOVEL DESTINY TRADING LLC", "O TRADE & LOGISTICS", "Oman Gulf Enterprises LLC", "OMAN OIL MARKETING COMPANY SAOG", "OMAN TRADING ESTABLISHMENT LLC", "ORIENTAL CEMENT & CONCRETE INDUSTRIES LLC", "ORIENTAL CEMENT PRODUCTS CO. LLC", "ORIENTAL DRY MORTAR LLC", "Osayd Global Contracting Building Decoration works", "PERFECT CITY TRADING LLC", "PIONEERING LINE OF TECHNICAL SERVICES", "PLAFIXX LLC", "PMA INTERNATIONAL LLC", "POWERMAX TRADING L.L.C", "PRINTWAVES S.P.C", "PROFESSIONAL SOLUTIONS TRADING LLC", "PUTZWERK LLC", "Queen International for Trade & Investment LLC", "REGAL INTERNATIONAL FURNITURE LLC", "Right Will Trading and Contracting LLC", "ROOTS FOR MODERN PROJECTS", "Rukn Alsalam Alraaqi LLC", "Sadaf Trading & investment LLC", "Saeed Shhata Ahmed Abuzaid", "Saleh Reza for Trading & Investment LLC", "SAMA AL KHADRA TRADING", "Samir Mohamed Al Zadjali Trading", "SAUD BAHWAN AUTOMOTIVE LLC", "SCH Scaffolding & Formworks  LLC", "SIKA MB LLC", "Sky Construction SPC", "SKYEDGE INTERNATIONAL SPC", "SODAMCO MUSCAT LLC", "STAR PUMPS TRADE SPC", "Stoneman Marble & Granite LLC", "SUN UNION INTERNATIONAL PROJECT LLC", "syed qaiser partner trading llc", "Talal Hai Al Naseem Trad. &  Cont. LLC", "TALENT ELECTRIC SERVICES L.L.C.", "Target Full Cont. LLC", "TARMAK LABORATORIES", "TECH ZONE BUILDING MATERIALS", "TECHNICAL BUSINESS INNOVATIONS LLC", "TECHNICAL SUPPLIES INTERNATIONAL CO. LLC", "TOTAL CONNEXONS ELECTRICAL", "United Business Green Land Company", "United Door Trading", "UNITED FUTURE BUILDERS LLC", "Vahab Mohajer Public Investment LLC", "VEGA SHIPPING SERVICES LLC", "W J TOWELL LLC", "WADI HABES TRADING EST.", "Wefaq Fadhel Trading & Invest SPC LLC", "White Lynx Travel & Tourism SPC", "ZOOMLION HEAVY INDUSTRY SPC"];
 
 const CATS=[
   {p:'CIV',n:'Civil',      i:'🧱',d:'CIVIL',    c:195},
@@ -592,7 +791,7 @@ const SH2_COLS=[...SH1_COLS,
 ];
 
 // ══ STATE ══
-let selCat=null,selItem=null;
+let selCat=null,selItem=null,mrsSelCat=null;
 let sheet1=[],sheet2=[];
 let mrsList=[];
 let activeMRSIdx=-1;
@@ -606,8 +805,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   try{sheet1=JSON.parse(localStorage.getItem('shc_s1')||'[]')}catch(e){sheet1=[]}
   try{sheet2=JSON.parse(localStorage.getItem('shc_s2')||'[]')}catch(e){sheet2=[]}
   try{mrsList=JSON.parse(localStorage.getItem('shc_mrs')||'[]')}catch(e){mrsList=[]}
-  buildCats();buildClusters();buildCosts();buildStaff();
-  buildMRSLocations();buildMRSItems();
+  buildCats();buildClusters();buildCosts();buildStaff();buildContractors();
+  buildMRSCluster();buildMRSCostCode();buildMRSStaff();
+  buildMRSItems();
   setDefaultDate();
   updateStat();
 });
@@ -649,18 +849,44 @@ function buildClusters(){
     o.value=k;o.textContent=`${k}  (${CMAP[k]})`;sel.appendChild(o);
   });
 }
-function buildMRSLocations(){
-  const sel=document.getElementById('mrs_location');
-  // Pre-fill locations from image context and cluster map
-  const locs=['10-59 MUB','10-59 Part 3','CLST-100','CLST-101','CLST-102','CLST-103',
-    'CLST-104','CLST-105','CLST-106','CLST-107','CLST-108','CLST-109','CLST-13',
-    'CLST-130','CLST-131','CLST-132','CLST-133','CLST-134','CLST-135','CLST-15',
-    'CLST-17','CLST-20','CLST-21','CLST-22','CLST-23','CLST-24','CLST-25',
-    'CLST-26','CLS94/95','CLS96/97','Warehouse SHC01','Site Office','Other'];
-  locs.forEach(l=>{
-    const o=document.createElement('option');o.value=l;o.textContent=l;sel.appendChild(o);
+
+function buildContractors(){
+  const sel=document.getElementById('mrs_contractor');
+  CONTRACTORS.forEach(name=>{
+    const o=document.createElement('option');
+    o.value=name;o.textContent=name;sel.appendChild(o);
   });
 }
+
+function buildMRSCluster(){
+  const sel=document.getElementById('mrs_cluster');
+  Object.keys(CMAP).sort().forEach(k=>{
+    const o=document.createElement('option');
+    o.value=k;o.textContent=k;sel.appendChild(o);
+  });
+}
+
+function buildMRSCostCode(){
+  const sel=document.getElementById('mrs_costcode');
+  CCODES.forEach(([code,name])=>{
+    const o=document.createElement('option');
+    o.value=code;o.textContent=`${code} — ${name}`;sel.appendChild(o);
+  });
+}
+
+function buildMRSStaff(){
+  const sel=document.getElementById('mrs_staff');
+  STAFF.forEach(s=>{
+    const o=document.createElement('option');
+    o.value=s.code;o.textContent=s.name||s.code;sel.appendChild(o);
+  });
+}
+
+function onMRSCluster(){
+  const c=document.getElementById('mrs_cluster').value;
+  document.getElementById('mrs_proptype').value=CMAP[c]||'';
+}
+
 function buildCosts(){
   const sel=document.getElementById('f_cost');
   CCODES.forEach(([code,name])=>{
@@ -693,13 +919,6 @@ function buildMRSItems(){
       <td><input id="mdesc-${i}" placeholder="Description of material"></td>
       <td><input id="muom-${i}" placeholder="UOM" style="width:65px"></td>
       <td><input id="mqty-${i}" placeholder="0" type="number" min="0" step="0.001" style="width:75px"></td>
-      <td>
-        <select id="mcost-${i}" style="font-size:11px;padding:4px 6px">
-          <option value="">Cost code</option>
-          ${CCODES.map(([c,n])=>`<option value="${c}">${c}</option>`).join('')}
-        </select>
-      </td>
-      <td><input id="mremark-${i}" placeholder="Remarks"></td>
       <td><button class="ib" onclick="clearMRSRow(${i})" title="Clear row">✕</button></td>`;
     tbody.appendChild(row);
   }
@@ -750,10 +969,9 @@ function pickMRSItem(rowIdx,itemNo){
   closeMrsDd(rowIdx);
 }
 function clearMRSRow(rowIdx){
-  ['mcode','mdesc','muom','mqty','mremark'].forEach(p=>{
+  ['mcode','mdesc','muom','mqty'].forEach(p=>{
     document.getElementById(`${p}-${rowIdx}`).value='';
   });
-  document.getElementById(`mcost-${rowIdx}`).value='';
 }
 
 // ══ CATEGORY PICK ══
@@ -762,11 +980,15 @@ function pickCat(p){
   document.querySelectorAll('.ctile').forEach(t=>t.classList.remove('sel'));
   document.getElementById('ct-'+p).classList.add('sel');
   const cat=CATS.find(c=>c.p===p);
-  document.getElementById('fhdr').innerHTML=`📝 Step 2 — Fill Details &nbsp;<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 8px;border-radius:12px;font-weight:600">${cat.i} ${cat.n}</span>`;
-  document.getElementById('f_dept').value=cat.d;
-  document.getElementById('iSrch').value='';
-  document.getElementById('iSrch').placeholder=`Search ${p} items by number or description…`;
-  clearAuto();goStep(2);
+  // Set dept for MRS context
+  mrsSelCat=cat;
+  // Navigate directly to MRS new slip
+  gotoTab('mrs');
+  switchMRS('new');
+  // Pre-fill category badge in MRS header
+  const badge=document.getElementById('mrsCatBadge');
+  if(badge) badge.innerHTML=`<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 10px;border-radius:12px;font-weight:600;margin-left:8px">${cat.i} ${cat.n}</span>`;
+  toast(`📋 MRS Slip ready — ${cat.n} category`);
 }
 
 // ══ ITEM SEARCH ══
@@ -1071,9 +1293,7 @@ function getMRSRows(){
         sr:i,
         code,desc,
         uom:(document.getElementById(`muom-${i}`)?.value||'').trim(),
-        qty,
-        cost:(document.getElementById(`mcost-${i}`)?.value||'').trim(),
-        remark:(document.getElementById(`mremark-${i}`)?.value||'').trim()
+        qty
       });
     }
   }
@@ -1083,25 +1303,21 @@ function getMRSRows(){
 function saveMRS(){
   const no=(document.getElementById('mrs_no')?.value||'').trim();
   const date=(document.getElementById('mrs_date')?.value||'').trim();
-  const loc=(document.getElementById('mrs_location')?.value||'').trim();
-  if(!no){toast('MRS No. is required','err');return;}
+  const contractor=(document.getElementById('mrs_contractor')?.value||'').trim();
+  if(!no){toast('SEQ No. is required','err');return;}
   if(!date){toast('Date is required','err');return;}
-  if(!loc){toast('Location is required','err');return;}
+  if(!contractor){toast('Contractor Name is required','err');return;}
   const rows=getMRSRows();
   if(!rows.length){toast('Add at least one item','err');return;}
   const record={
     id:Date.now(),
-    no,date,loc,
-    contractor:(document.getElementById('mrs_contractor')?.value||'ABCON'),
-    type:(document.getElementById('mrs_type')?.value||'Chargable'),
-    remarks:(document.getElementById('mrs_remarks')?.value||''),
+    no,date,
+    contractor,
+    cluster:(document.getElementById('mrs_cluster')?.value||''),
+    proptype:(document.getElementById('mrs_proptype')?.value||''),
+    costcode:(document.getElementById('mrs_costcode')?.value||''),
+    staff:(document.getElementById('mrs_staff')?.value||''),
     rows,
-    sigs:{
-      req:(document.getElementById('sig_req')?.value||''),
-      fmn:(document.getElementById('sig_fmn')?.value||''),
-      eng:(document.getElementById('sig_eng')?.value||''),
-      rcv:(document.getElementById('sig_rcv')?.value||''),
-    },
     savedAt:new Date().toISOString()
   };
   mrsList.push(record);
@@ -1109,16 +1325,18 @@ function saveMRS(){
   toast('✅ MRS Saved!');
   clearMRSForm();
   activeMRSIdx=mrsList.length-1;
-  setTimeout(()=>{switchMRS('view');showMRSPreview(activeMRSIdx);},300);
+  setTimeout(()=>{switchMRS('list');},300);
 }
 
 function clearMRSForm(){
-  ['mrs_no','mrs_date','mrs_remarks','sig_req','sig_fmn','sig_eng','sig_rcv'].forEach(id=>{
+  ['mrs_no','mrs_date'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
-  document.getElementById('mrs_contractor').value='ABCON';
-  document.getElementById('mrs_location').value='';
-  document.getElementById('mrs_type').value='Chargable';
+  document.getElementById('mrs_contractor').value='';
+  document.getElementById('mrs_cluster').value='';
+  document.getElementById('mrs_proptype').value='';
+  document.getElementById('mrs_costcode').value='';
+  document.getElementById('mrs_staff').value='';
   buildMRSItems();
   setDefaultDate();
 }
@@ -1126,22 +1344,17 @@ function clearMRSForm(){
 function previewMRS(){
   const no=(document.getElementById('mrs_no')?.value||'').trim();
   const date=(document.getElementById('mrs_date')?.value||'').trim();
-  const loc=(document.getElementById('mrs_location')?.value||'').trim();
-  if(!no||!date||!loc){toast('Fill No., Date and Location first','err');return;}
+  const contractor=(document.getElementById('mrs_contractor')?.value||'').trim();
+  if(!no||!date||!contractor){toast('Fill SEQ No., Date and Contractor first','err');return;}
   const rows=getMRSRows();
   if(!rows.length){toast('Add at least one item','err');return;}
   const tempRecord={
-    id:-1,no,date,loc,
-    contractor:(document.getElementById('mrs_contractor')?.value||'ABCON'),
-    type:(document.getElementById('mrs_type')?.value||'Chargable'),
-    remarks:(document.getElementById('mrs_remarks')?.value||''),
-    rows,
-    sigs:{
-      req:(document.getElementById('sig_req')?.value||''),
-      fmn:(document.getElementById('sig_fmn')?.value||''),
-      eng:(document.getElementById('sig_eng')?.value||''),
-      rcv:(document.getElementById('sig_rcv')?.value||''),
-    }
+    id:-1,no,date,contractor,
+    cluster:(document.getElementById('mrs_cluster')?.value||''),
+    proptype:(document.getElementById('mrs_proptype')?.value||''),
+    costcode:(document.getElementById('mrs_costcode')?.value||''),
+    staff:(document.getElementById('mrs_staff')?.value||''),
+    rows
   };
   document.getElementById('mrsPreviewBox').innerHTML=renderMRSSlip(tempRecord);
   const viewTab=document.getElementById('mrstab-view');
@@ -1152,8 +1365,8 @@ function previewMRS(){
 function renderMRSList(){
   const q=(document.getElementById('mrsSearch')?.value||'').toLowerCase();
   const filtered=mrsList.filter(r=>
-    !q||r.no.includes(q)||r.loc.toLowerCase().includes(q)||
-    r.date.includes(q)||r.contractor.toLowerCase().includes(q)
+    !q||r.no.includes(q)||r.contractor.toLowerCase().includes(q)||
+    r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q)
   );
   document.getElementById('mrsCnt').textContent=filtered.length+' slips';
   const listEl=document.getElementById('mrsList');
@@ -1168,7 +1381,7 @@ function renderMRSList(){
     return`<div class="mrs-list-item" onclick="viewMRS(${oi})">
       <div class="mrs-list-no">MRS #${r.no}</div>
       <div class="mrs-list-meta">
-        <div class="mrs-list-loc">${r.loc} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.contractor}</span></div>
+        <div class="mrs-list-loc">${r.contractor||'—'} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.cluster||''}</span></div>
         <div class="mrs-list-items">${itemSummary||'No items described'}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -1199,36 +1412,36 @@ function renderMRSSlip(r){
     try{const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
     catch{return d;}
   };
-  // Pad rows to 10
   const rows=[...r.rows];
-  while(rows.length<10)rows.push({sr:rows.length+1,code:'',desc:'',uom:'',qty:'',cost:'',remark:''});
+  while(rows.length<10)rows.push({sr:rows.length+1,code:'',desc:'',uom:'',qty:''});
   return`
   <div class="mrs-preview" id="mrsSlipPrint">
     <table style="margin-bottom:0">
       <tr class="title-row">
-        <td colspan="8" style="padding:10px;font-size:14px">ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST)</td>
+        <td colspan="5" style="padding:10px;font-size:14px">ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST)</td>
       </tr>
       <tr>
-        <td colspan="2" style="background:#e8e8e8;font-weight:700">NO: <span style="color:#c00;font-size:13px">${r.no}</span></td>
-        <td colspan="4" style="text-align:center;font-weight:700;background:#e8e8e8;letter-spacing:1px">SITE MATERIAL REQUISITION SLIP</td>
-        <td colspan="2" style="background:#e8e8e8;font-weight:700">DATE: &nbsp;${fmtDate(r.date)}</td>
+        <td colspan="2" style="background:#e8e8e8;font-weight:700">SEQ NO: <span style="color:#c00;font-size:13px">${r.no}</span></td>
+        <td colspan="3" style="text-align:center;font-weight:700;background:#e8e8e8;letter-spacing:1px">MRS — REQUISITION SLIP</td>
       </tr>
       <tr>
-        <td colspan="4"><b>CONTRACTOR NAME :</b> &nbsp;${r.contractor||'ABCON'}</td>
-        <td colspan="4" style="text-align:right;font-style:italic;color:#555">${r.type||'Chargable'}</td>
+        <td colspan="2"><b>DATE:</b> &nbsp;${fmtDate(r.date)}</td>
+        <td colspan="3"><b>CONTRACTOR NAME:</b> &nbsp;${r.contractor||''}</td>
       </tr>
       <tr>
-        <td colspan="4"><b>LOCATION :</b> &nbsp;${r.loc}</td>
-        <td colspan="4">${r.remarks||''}</td>
+        <td colspan="2"><b>CLUSTER:</b> &nbsp;${r.cluster||''}</td>
+        <td colspan="2"><b>PROPERTY TYPE:</b> &nbsp;${r.proptype||''}</td>
+        <td><b>COST CODE:</b> &nbsp;${r.costcode||''}</td>
+      </tr>
+      <tr>
+        <td colspan="5"><b>STAFF NAME / ASSETS:</b> &nbsp;${r.staff||''}</td>
       </tr>
       <tr class="hdr-row">
-        <td style="width:36px">SR NO.</td>
-        <td style="min-width:110px">ITEM CODE</td>
-        <td style="min-width:220px">DESCRIPTION OF MATERIAL</td>
-        <td style="width:55px">UOM</td>
-        <td style="width:55px">QTY</td>
-        <td style="width:80px">COST CODE</td>
-        <td colspan="2">REMARKS</td>
+        <td style="width:36px">S.M.</td>
+        <td style="min-width:120px">ITEM CODE</td>
+        <td style="min-width:240px">DESCRIPTION OF MATERIAL</td>
+        <td style="width:60px">UOM</td>
+        <td style="width:60px">QTY</td>
       </tr>
       ${rows.map((row,i)=>`<tr>
         <td style="text-align:center;color:#666">${i+1}</td>
@@ -1236,31 +1449,7 @@ function renderMRSSlip(r){
         <td>${row.desc||''}</td>
         <td style="text-align:center">${row.uom||''}</td>
         <td style="text-align:center">${row.qty||''}</td>
-        <td style="text-align:center">${row.cost||''}</td>
-        <td colspan="2">${row.remark||''}</td>
       </tr>`).join('')}
-      <tr class="sig-row">
-        <td colspan="2" style="padding-top:16px">
-          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Requested By</div>
-          <div style="font-size:9px">NAME: ${r.sigs?.req||''}</div>
-          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
-        </td>
-        <td colspan="2" style="padding-top:16px">
-          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Approved By Foreman</div>
-          <div style="font-size:9px">NAME: ${r.sigs?.fmn||''}</div>
-          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
-        </td>
-        <td colspan="2" style="padding-top:16px">
-          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Approved By Engg</div>
-          <div style="font-size:9px">NAME: ${r.sigs?.eng||''}</div>
-          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
-        </td>
-        <td colspan="2" style="padding-top:16px">
-          <div style="font-weight:700;font-size:9px;margin-bottom:4px">Receiving Sign</div>
-          <div style="font-size:9px">NAME: ${r.sigs?.rcv||''}</div>
-          <div style="border-top:1px solid #000;margin-top:22px;padding-top:2px;font-size:9px">SIGN:</div>
-        </td>
-      </tr>
     </table>
   </div>`;
 }
@@ -1280,7 +1469,7 @@ function printMRS(){
     @media print{@page{margin:10mm}}
   </style></head><body>
   ${box.innerHTML}
-  <script>window.onload=()=>window.print()<\/script>
+  <scr'+'ipt>window.onload=()=>window.print()<'+'/script>
   </body></html>`);
   w.document.close();
 }
@@ -1311,20 +1500,19 @@ function exportMRSExcel(){
 function exportMRSToExcel(records,filename){
   const wb=XLSX.utils.book_new();
   records.forEach(r=>{
-    const hdr=['SR NO.','ITEM CODE','DESCRIPTION OF MATERIAL','UOM','QTY','COST CODE','REMARKS'];
+    const hdr=['S.M.','ITEM CODE','DESCRIPTION OF MATERIAL','UOM','QTY'];
     const meta=[
-      ['ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST) — SITE MATERIAL REQUISITION SLIP'],
-      [`MRS NO: ${r.no}`,`DATE: ${r.date}`,`CONTRACTOR: ${r.contractor}`,`LOCATION: ${r.loc}`],
-      [`TYPE: ${r.type}`,`REMARKS: ${r.remarks}`],
+      ['ALLIED BUSINESS CORPORATION LLC. (ABCON/BOGEST) — MRS REQUISITION SLIP'],
+      [`SEQ NO: ${r.no}`,`DATE: ${r.date}`],
+      [`CONTRACTOR: ${r.contractor}`],
+      [`CLUSTER: ${r.cluster}`,`PROPERTY TYPE: ${r.proptype}`,`COST CODE: ${r.costcode}`],
+      [`STAFF NAME / ASSETS: ${r.staff}`],
       [],
       hdr,
-      ...r.rows.map(row=>[row.sr,row.code,row.desc,row.uom,row.qty,row.cost,row.remark]),
-      [],
-      ['Requested By','','Approved By Foreman','','Approved By Engg','','Receiving Sign',''],
-      [r.sigs?.req||'','',r.sigs?.fmn||'','',r.sigs?.eng||'','',r.sigs?.rcv||'',''],
+      ...r.rows.map(row=>[row.sr,row.code,row.desc,row.uom,row.qty]),
     ];
     const ws=XLSX.utils.aoa_to_sheet(meta);
-    ws['!cols']=[{wch:8},{wch:16},{wch:40},{wch:8},{wch:8},{wch:12},{wch:30}];
+    ws['!cols']=[{wch:8},{wch:18},{wch:45},{wch:10},{wch:10}];
     XLSX.utils.book_append_sheet(wb,ws,`MRS-${r.no}`.slice(0,31));
   });
   XLSX.writeFile(wb,filename);
@@ -1442,7 +1630,7 @@ function renderDash(){
           <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b1);cursor:pointer" onclick="gotoTab('mrs');viewMRS(${mrsList.indexOf(r)})">
             <div style="font-family:var(--mo);font-size:12px;color:var(--pur);font-weight:700;min-width:50px">#${r.no}</div>
             <div style="flex:1;overflow:hidden">
-              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.loc}</div>
+              <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.contractor||'—'}</div>
               <div style="font-size:10px;color:var(--sub)">${r.date} · ${r.rows.filter(x=>x.code||x.desc).length} items</div>
             </div>
             <span class="mrs-badge">${r.type}</span>
