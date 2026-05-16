@@ -223,152 +223,9 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 
 <!-- NAV -->
 <div class="nav">
-  <div class="ntab on"  id="tab-form"   onclick="gotoTab('form')">➕ Add Entry</div>
+  <div class="ntab on"  id="tab-mrs"    onclick="gotoTab('mrs')">📋 MRS — Requisition Slips</div>
   <div class="ntab"     id="tab-sheet"  onclick="gotoTab('sheet')">📊 View Sheet</div>
-  <div class="ntab"     id="tab-mrs"    onclick="gotoTab('mrs')">📋 MRS — Requisition Slips</div>
   <div class="ntab"     id="tab-dash"   onclick="gotoTab('dash')">📈 Dashboard</div>
-</div>
-
-<!-- ═══════════════════════════ FORM PAGE ═══════════════════════════ -->
-<div class="pg on" id="pg-form">
-<div class="wrap">
-
-  <!-- STEP BAR -->
-  <div class="steps" id="stepBar">
-    <div class="sn on" id="sn1">1</div>
-    <div class="sl on" id="sl1">Select Category</div>
-    <div class="sline" id="ln1"></div>
-    <div class="sn off" id="sn2">2</div>
-    <div class="sl off" id="sl2">Fill Details</div>
-    <div class="sline" id="ln2"></div>
-    <div class="sn off" id="sn3">3</div>
-    <div class="sl off" id="sl3">Review &amp; Save</div>
-  </div>
-
-  <!-- STEP 1 -->
-  <div id="st1">
-    <div class="card">
-      <div class="chdr">📁 Step 1 — Select Item Category</div>
-      <div class="cgrid" id="catGrid"></div>
-    </div>
-  </div>
-
-  <!-- STEP 2 -->
-  <div id="st2" style="display:none">
-    <div class="card">
-      <div class="chdr" id="fhdr">📝 Step 2 — Fill Details</div>
-
-      <div style="margin-bottom:16px">
-        <div class="fl" style="margin-bottom:5px">Search Item Number / Description <span class="r">*</span></div>
-        <div class="sw">
-          <span class="si">🔍</span>
-          <input type="text" id="iSrch" placeholder="Type item no. or description…" autocomplete="off"
-            oninput="doSearch()" onkeydown="ddKey(event)" onblur="setTimeout(closeDd,200)">
-          <div class="ddl" id="iDd" style="display:none"></div>
-        </div>
-        <div class="chips" id="chipRow" style="display:none">
-          <div class="chip"><div class="chl">Item No.</div><div class="chv" id="cp1"></div></div>
-          <div class="chip"><div class="chl">UoM Code</div><div class="chv" id="cp2"></div></div>
-          <div class="chip"><div class="chl">Whse</div><div class="chv" id="cp3"></div></div>
-          <div class="chip"><div class="chl">Account Code</div><div class="chv" id="cp4"></div></div>
-          <div class="chip"><div class="chl">Project</div><div class="chv" id="cp5"></div></div>
-          <div class="chip"><div class="chl">Staff</div><div class="chv" id="cp6"></div></div>
-        </div>
-      </div>
-
-      <div class="afz">
-        <div class="afzh">🔒 Auto-Filled from Master — Read Only</div>
-        <div class="fg3">
-          <div class="fg"><div class="fl">S.NO <span class="a">auto</span></div><input id="f_sno" class="af" readonly></div>
-          <div class="fg"><div class="fl">Item No. <span class="a">auto</span></div><input id="f_itemNo" class="af" readonly></div>
-          <div class="fg"><div class="fl">UoM Code <span class="a">auto</span></div><input id="f_uom" class="af" readonly></div>
-          <div class="fg"><div class="fl">Whse <span class="a">auto</span></div><input id="f_whse" class="af" readonly></div>
-          <div class="fg"><div class="fl">Account Code <span class="a">auto</span></div><input id="f_acct" class="af" readonly></div>
-          <div class="fg"><div class="fl">Project <span class="a">auto</span></div><input id="f_proj" class="af" readonly></div>
-        </div>
-        <div class="fg" style="margin-top:12px"><div class="fl">Item Description <span class="a">auto</span></div><input id="f_desc" class="af" readonly></div>
-      </div>
-
-      <div class="sectlabel">✏️ Fill In — Sheet 1 &amp; Sheet 2 Fields</div>
-      <div class="fg2" style="margin-bottom:13px">
-        <div class="fg"><div class="fl">Quantity <span class="r">*</span></div>
-          <input type="number" id="f_qty" placeholder="e.g. 50" min="0" step="0.001" oninput="calcTotal()"></div>
-        <div class="fg"><div class="fl">Info Price (Unit Price)</div>
-          <input type="number" id="f_price" placeholder="e.g. 8.50" min="0" step="0.01" oninput="calcTotal()"></div>
-        <div class="fg"><div class="fl">Total <span class="a">auto = qty × price</span></div>
-          <input id="f_total" class="af" readonly placeholder="Auto calculated"></div>
-        <div class="fg"><div class="fl">Ordered</div>
-          <input id="f_ord" placeholder="Order reference (optional)"></div>
-        <div class="fg"><div class="fl">Department</div>
-          <select id="f_dept">
-            <option value="">-- Select --</option>
-            <option>ADMN&amp;GEN</option><option>CIVIL</option><option>FINANCE</option>
-            <option>HAVC</option><option>HR</option><option>MEP</option>
-            <option>PROCUR</option><option>QC</option><option>QS</option><option>STCONIN</option>
-          </select></div>
-        <div class="fg"><div class="fl">Cluster / Units</div>
-          <select id="f_clust" onchange="onClust()">
-            <option value="">-- Select cluster --</option>
-          </select></div>
-        <div class="fg"><div class="fl">Property Type <span class="a">auto from cluster</span></div>
-          <input id="f_prop" class="af" readonly placeholder="Auto-filled on cluster select"></div>
-        <div class="fg"><div class="fl">Cost Code</div>
-          <select id="f_cost"><option value="">-- Select --</option></select></div>
-        <div class="fg"><div class="fl">Staff Name / Assets</div>
-          <div style="position:relative">
-            <select id="f_staff" onchange="onStaffChange('f_staff','f_staff_info')"></select>
-          </div>
-          <div id="f_staff_info" style="margin-top:5px;padding:5px 9px;background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.14);border-radius:4px;font-size:10px;display:none;gap:12px;align-items:center">
-            <span style="font-family:var(--mo);color:var(--grn);font-weight:700" id="f_staff_code"></span>
-            <span style="color:var(--sub)" id="f_staff_rule"></span>
-          </div>
-        </div>
-        <div class="fg full"><div class="fl">Item Details / Notes</div>
-          <textarea id="f_notes" placeholder="Specifications, serial numbers, remarks…"></textarea></div>
-      </div>
-
-      <div id="sh2block">
-        <div class="sectlabel">📄 Sheet 2 Extra Fields (Inventory.xlsx columns)</div>
-        <div class="fg3" style="margin-bottom:13px">
-          <div class="fg"><div class="fl">Qty in Whse</div>
-            <input id="f_qtywhse" placeholder="Qty in warehouse"></div>
-          <div class="fg"><div class="fl">Last Purchase Price</div>
-            <input type="number" id="f_lastprice" placeholder="0.00" step="0.01"></div>
-          <div class="fg"><div class="fl">Asset Free Parts</div>
-            <input id="f_afp" placeholder="(optional)"></div>
-          <div class="fg"><div class="fl">Supplier Name</div>
-            <input id="f_supname" placeholder="Supplier company name"></div>
-          <div class="fg"><div class="fl">Supplier VAT No</div>
-            <input id="f_supvat" placeholder="VAT registration number"></div>
-          <div class="fg"><div class="fl">Supplier Invoice No</div>
-            <input id="f_supinv" placeholder="Invoice number"></div>
-          <div class="fg"><div class="fl">Supplier Invoice Date</div>
-            <input type="date" id="f_supdate"></div>
-          <div class="fg"><div class="fl">SVItemCode</div>
-            <input id="f_svcode" placeholder="Supplier item code"></div>
-        </div>
-      </div>
-
-      <div class="brow">
-        <button class="btn bg" onclick="goStep(1)">← Back</button>
-        <button class="btn bp" onclick="goStep(3)">Preview &amp; Review →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 3 -->
-  <div id="st3" style="display:none">
-    <div class="card">
-      <div class="chdr">✅ Step 3 — Review Before Saving</div>
-      <div id="rvBox"></div>
-      <div class="brow">
-        <button class="btn bg" onclick="goStep(2)">← Edit</button>
-        <button class="btn bs" onclick="saveRow()">💾 Save to Sheet</button>
-      </div>
-    </div>
-  </div>
-
-</div>
 </div>
 
 <!-- ═══════════════════════════ SHEET PAGE ═══════════════════════════ -->
@@ -444,7 +301,7 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
         <span class="cb" id="rowCnt">0 rows</span>
       </div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button class="btn bg bsm" onclick="gotoTab('form')">➕ Add</button>
+        <button class="btn bg bsm" onclick="gotoTab('mrs')">➕ Add</button>
         <button class="btn be bsm" onclick="exportSheet()">⬇ Export Excel</button>
         <button class="btn bd bsm" onclick="clearAll()">🗑 Clear Sheet</button>
       </div>
@@ -455,7 +312,7 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
     </table></div>
     <div class="empty" id="shEmpty" style="display:none">
       <div class="ei">📋</div>
-      <div>No records. <a href="#" onclick="gotoTab('form')" style="color:var(--acc)">Add entry →</a></div>
+      <div>No records. <a href="#" onclick="gotoTab('mrs')" style="color:var(--acc)">Add entry →</a></div>
     </div>
   </div>
 
@@ -463,7 +320,7 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 </div>
 
 <!-- ═══════════════════════════ MRS PAGE ═══════════════════════════ -->
-<div class="pg" id="pg-mrs">
+<div class="pg on" id="pg-mrs">
 <div class="wrap">
 
   <!-- MRS sub-tabs -->
@@ -476,6 +333,12 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
   <div id="mrs-new">
     <div class="card">
       <div class="chdr">📋 MRS — Requisition Slip<span id="mrsCatBadge"></span></div>
+
+      <!-- Category selector -->
+      <div style="margin-bottom:16px">
+        <div class="sectlabel">📁 Material Category <span style="color:var(--red)">*</span></div>
+        <div class="cgrid" id="mrsFormCatGrid"></div>
+      </div>
 
       <!-- Header info matching the sketch -->
       <div class="fg2" style="margin-bottom:13px">
@@ -502,6 +365,17 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
           <span style="font-family:var(--mo);color:var(--acc);font-weight:700" id="contractor_code"></span>
           <span id="contractor_balance" style="font-size:10px"></span>
         </div>
+      </div>
+
+      <!-- Rentable / Chargeable / Free -->
+      <div class="fg" style="margin-bottom:16px">
+        <div class="fl" style="margin-bottom:8px">Material Type <span class="r">*</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="mrsTypeGroup">
+          <button type="button" class="mrs-type-btn" id="mtype-rentable"   onclick="pickMRSType('Rentable')"   style="flex:1;min-width:90px;padding:10px 8px;border-radius:var(--r2);border:2px solid var(--b1);background:var(--s2);color:var(--sub);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;font-family:var(--ff)">🔄 Rentable</button>
+          <button type="button" class="mrs-type-btn" id="mtype-chargeable" onclick="pickMRSType('Chargeable')" style="flex:1;min-width:90px;padding:10px 8px;border-radius:var(--r2);border:2px solid var(--b1);background:var(--s2);color:var(--sub);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;font-family:var(--ff)">💳 Chargeable</button>
+          <button type="button" class="mrs-type-btn" id="mtype-free"       onclick="pickMRSType('Free')"       style="flex:1;min-width:90px;padding:10px 8px;border-radius:var(--r2);border:2px solid var(--b1);background:var(--s2);color:var(--sub);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;font-family:var(--ff)">🎁 Free</button>
+        </div>
+        <input type="hidden" id="mrs_type" value="">
       </div>
 
       <div class="fg2" style="margin-bottom:13px">
@@ -572,15 +446,14 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 
   <!-- MRS LIST -->
   <div id="mrs-list" style="display:none">
-    <div class="sa" style="flex-wrap:wrap;gap:10px">
-      <div class="sf" style="flex-wrap:wrap;gap:8px;align-items:center">
-        <input style="width:220px" type="text" id="mrsSearch" placeholder="🔍 Search MRS records…" oninput="renderMRSList()">
-        <span style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Date range:</span>
-        <input type="date" id="mrsDateFrom" style="width:140px" onchange="renderMRSList()" title="From date">
-        <span style="color:var(--sub);font-size:12px">→</span>
-        <input type="date" id="mrsDateTo" style="width:140px" onchange="renderMRSList()" title="To date">
-        <button class="btn bg bsm" onclick="document.getElementById('mrsDateFrom').value='';document.getElementById('mrsDateTo').value='';renderMRSList()">✕ Clear</button>
+    <div class="card" style="margin-bottom:14px">
+      <div class="chdr">📁 Filter by Category</div>
+      <div class="cgrid" id="mrsCatGrid"></div>
+    </div>
+    <div class="sa" style="flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <div style="display:flex;gap:7px;align-items:center">
         <span class="cb" id="mrsCnt">0 slips</span>
+        <button class="btn bg bsm" id="mrsCatClear" style="display:none" onclick="clearMRSCatFilter()">✕ Clear filter</button>
       </div>
       <div style="display:flex;gap:7px">
         <button class="btn bg bsm" onclick="switchMRS('new')">➕ New MRS</button>
@@ -1309,23 +1182,27 @@ const CATS=[
 ];
 
 const SH1_COLS=[
-  {key:'sno',       hdr:'S.NO',               auto:true, w:7},
-  {key:'itemNo',    hdr:'Item No.',            auto:true, w:16,isItem:true},
-  {key:'desc',      hdr:'Item Description',    auto:true, w:55},
-  {key:'uom',       hdr:'UoM Code',            auto:true, w:10},
-  {key:'notes',     hdr:'Item Details',        auto:false,w:30},
-  {key:'qty',       hdr:'Quantity',            auto:false,w:10},
-  {key:'price',     hdr:'Info Price',          auto:false,w:12},
-  {key:'total',     hdr:'Total',               auto:true, w:12},
-  {key:'whse',      hdr:'Whse',                auto:true, w:8},
-  {key:'ord',       hdr:'Ordered',             auto:false,w:12},
-  {key:'acct',      hdr:'Account Code',        auto:true, w:14},
-  {key:'proj',      hdr:'Project',             auto:true, w:10},
-  {key:'dept',      hdr:'Department',          auto:false,w:12},
-  {key:'prop',      hdr:'Property Type',       auto:false,w:14},
-  {key:'clust',     hdr:'Cluster / Units',     auto:false,w:16},
-  {key:'cost',      hdr:'Cost Code',           auto:false,w:10},
-  {key:'staff',     hdr:'Staff Name / Assets', auto:false,w:32},
+  {key:'sno',          hdr:'S.NO',               auto:true, w:7},
+  {key:'mrsDate',      hdr:'Date',               auto:false,w:14},
+  {key:'mrsNo',        hdr:'SEQ NO',             auto:false,w:12},
+  {key:'supname',      hdr:'Contractor Name',    auto:false,w:32},
+  {key:'materialType', hdr:'Material Type',      auto:false,w:14},
+  {key:'itemNo',       hdr:'Item No.',           auto:true, w:16,isItem:true},
+  {key:'desc',         hdr:'Item Description',   auto:true, w:55},
+  {key:'uom',          hdr:'UoM Code',           auto:true, w:10},
+  {key:'notes',        hdr:'Item Details',       auto:false,w:30},
+  {key:'qty',          hdr:'Quantity',           auto:false,w:10},
+  {key:'price',        hdr:'Info Price',         auto:false,w:12},
+  {key:'total',        hdr:'Total',              auto:true, w:12},
+  {key:'whse',         hdr:'Whse',               auto:true, w:8},
+  {key:'ord',          hdr:'Ordered',            auto:false,w:12},
+  {key:'acct',         hdr:'Account Code',       auto:true, w:14},
+  {key:'proj',         hdr:'Project',            auto:true, w:10},
+  {key:'dept',         hdr:'Department',         auto:false,w:12},
+  {key:'prop',         hdr:'Property Type',      auto:false,w:14},
+  {key:'clust',        hdr:'Cluster / Units',    auto:false,w:16},
+  {key:'cost',         hdr:'Cost Code',          auto:false,w:10},
+  {key:'staff',        hdr:'Staff Name / Assets',auto:false,w:32},
 ];
 
 const SH2_COLS=[...SH1_COLS,
@@ -1356,6 +1233,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   try{mrsList=JSON.parse(localStorage.getItem('shc_mrs')||'[]')}catch(e){mrsList=[]}
   buildCats();buildClusters();buildCosts();buildStaff();buildContractors();
   buildMRSCluster();buildMRSCostCode();buildMRSStaff();
+  buildMRSFormCatGrid();
   buildMRSItems();
   setDefaultDate();
   updateStat();
@@ -1384,7 +1262,9 @@ function setDefaultDate(){
 
 // ══ BUILDS ══
 function buildCats(){
-  document.getElementById('catGrid').innerHTML=CATS.map(c=>
+  const catGrid=document.getElementById('catGrid');
+  if(!catGrid)return;
+  catGrid.innerHTML=CATS.map(c=>
     `<div class="ctile" id="ct-${c.p}" onclick="pickCat('${c.p}')">
       <div class="cti">${c.i}</div><div class="ctn">${c.n}</div>
       <div class="ctc">${c.p}-XXXXXX</div>
@@ -1393,6 +1273,7 @@ function buildCats(){
 }
 function buildClusters(){
   const sel=document.getElementById('f_clust');
+  if(!sel)return;
   Object.keys(CMAP).sort().forEach(k=>{
     const o=document.createElement('option');
     o.value=k;o.textContent=`${k}  (${CMAP[k]})`;sel.appendChild(o);
@@ -1568,12 +1449,14 @@ function onMRSCluster(){
 
 function buildCosts(){
   const sel=document.getElementById('f_cost');
+  if(!sel)return;
   CCODES.forEach(([code,name])=>{
     const o=document.createElement('option');o.value=code;o.textContent=`${code} — ${name}`;sel.appendChild(o);
   });
 }
 function buildStaff(){
   const sel=document.getElementById('f_staff');
+  if(!sel)return;
   sel.innerHTML='<option value="">-- Select --</option>';
   STAFF.forEach(s=>{
     const o=document.createElement('option');
@@ -1673,20 +1556,17 @@ function pickCat(p){
   document.querySelectorAll('.ctile').forEach(t=>t.classList.remove('sel'));
   document.getElementById('ct-'+p).classList.add('sel');
   const cat=CATS.find(c=>c.p===p);
-  // Set dept for MRS context
   mrsSelCat=cat;
-  // Navigate directly to MRS new slip
-  gotoTab('mrs');
-  switchMRS('new');
-  // Pre-fill category badge in MRS header
-  const badge=document.getElementById('mrsCatBadge');
-  if(badge) badge.innerHTML=`<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 10px;border-radius:12px;font-weight:600;margin-left:8px">${cat.i} ${cat.n}</span>`;
-  toast(`📋 MRS Slip ready — ${cat.n} category`);
+  // Update form header to show selected category
+  const fhdr=document.getElementById('fhdr');
+  if(fhdr) fhdr.innerHTML=`📝 Fill Details &nbsp;<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 10px;border-radius:12px;font-weight:600">${cat.i} ${cat.n}</span>`;
 }
 
 // ══ ITEM SEARCH ══
 function doSearch(){
-  const q=document.getElementById('iSrch').value.trim().toLowerCase();
+  const iSrch=document.getElementById('iSrch');
+  if(!iSrch)return;
+  const q=iSrch.value.trim().toLowerCase();
   const dd=document.getElementById('iDd');
   if(!q){dd.style.display='none';return;}
   ddItems=ITEMS.filter(it=>{
@@ -1712,80 +1592,68 @@ function ddKey(e){
   else if(e.key==='Escape')closeDd();
 }
 function hiDD(){document.querySelectorAll('.ddi').forEach((el,i)=>{el.className='ddi'+(i===ddIdx?' hi':'')});}
-function closeDd(){document.getElementById('iDd').style.display='none';}
+function closeDd(){const el=document.getElementById('iDd');if(el)el.style.display='none';}
 
 function pickItem(itemNo){
   const it=ITEMS.find(i=>i.itemNo===itemNo);
   if(!it)return;
   selItem=it;
-  document.getElementById('iSrch').value=`${it.itemNo} — ${it.desc}`;
+  const iSrch=document.getElementById('iSrch');
+  if(iSrch)iSrch.value=`${it.itemNo} — ${it.desc}`;
   closeDd();
-  document.getElementById('f_sno').value=it.sno;
-  document.getElementById('f_itemNo').value=it.itemNo;
-  document.getElementById('f_desc').value=it.desc;
-  document.getElementById('f_uom').value=it.uom;
-  document.getElementById('f_whse').value=it.whse;
-  document.getElementById('f_acct').value='';
-  document.getElementById('f_proj').value=it.proj;
-  document.getElementById('f_staff').value=it.staff||'GEN4';
+  const _s=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+  _s('f_sno',it.sno);_s('f_itemNo',it.itemNo);_s('f_desc',it.desc);
+  _s('f_uom',it.uom);_s('f_whse',it.whse);_s('f_acct','');
+  _s('f_proj',it.proj);_s('f_staff',it.staff||'GEN4');
   if(it.mep){
     const m=it.mep;
-    if(m.dept)document.getElementById('f_dept').value=m.dept;
-    if(m.propType)document.getElementById('f_prop').value=m.propType;
-    if(m.cluster)document.getElementById('f_clust').value=m.cluster;
-    if(m.costCode)document.getElementById('f_cost').value=m.costCode;
-    if(m.qtyInWhse)document.getElementById('f_qtywhse').value=m.qtyInWhse;
-    if(m.lastPrice)document.getElementById('f_lastprice').value=m.lastPrice;
-    if(m.quantity)document.getElementById('f_qty').value=m.quantity;
+    const _sf=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.value=v;};
+    _sf('f_dept',m.dept);_sf('f_prop',m.propType);_sf('f_clust',m.cluster);
+    _sf('f_cost',m.costCode);_sf('f_qtywhse',m.qtyInWhse);_sf('f_lastprice',m.lastPrice);_sf('f_qty',m.quantity);
   }
-  document.getElementById('cp1').textContent=it.itemNo;
-  document.getElementById('cp2').textContent=it.uom;
-  document.getElementById('cp3').textContent=it.whse;
-  document.getElementById('cp4').textContent='';
-  document.getElementById('cp5').textContent=it.proj;
-  document.getElementById('cp6').textContent=it.staff||'GEN4';
-  document.getElementById('chipRow').style.display='flex';
+  ['cp1','cp2','cp3','cp4','cp5','cp6'].forEach((id,i)=>{const e=document.getElementById(id);if(e)e.textContent=[it.itemNo,it.uom,it.whse,'',it.proj,it.staff||'GEN4'][i];});
+  const crEl=document.getElementById('chipRow');if(crEl)crEl.style.display='flex';
 }
 function clearAuto(){
   selItem=null;
-  ['f_sno','f_itemNo','f_desc','f_uom','f_whse','f_acct','f_proj','f_total'].forEach(id=>{
-    document.getElementById(id).value='';
+  ['f_sno','f_itemNo','f_desc','f_uom','f_whse','f_acct','f_proj','f_total','f_prop'].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.value='';
   });
-  document.getElementById('f_prop').value='';
-  document.getElementById('chipRow').style.display='none';
-  document.getElementById('iSrch').value='';
+  const cr=document.getElementById('chipRow');if(cr)cr.style.display='none';
+  const is=document.getElementById('iSrch');if(is)is.value='';
 }
 function onClust(){
-  const c=document.getElementById('f_clust').value;
-  document.getElementById('f_prop').value=CMAP[c]||'';
+  const cl=document.getElementById('f_clust');if(!cl)return;
+  const pr=document.getElementById('f_prop');if(pr)pr.value=CMAP[cl.value]||'';
 }
 function calcTotal(){
-  const q=parseFloat(document.getElementById('f_qty').value)||0;
-  const p=parseFloat(document.getElementById('f_price').value)||0;
-  document.getElementById('f_total').value=q&&p?(q*p).toFixed(2):'';
+  const qe=document.getElementById('f_qty');if(!qe)return;
+  const pe=document.getElementById('f_price');if(!pe)return;
+  const q=parseFloat(qe.value)||0,p=parseFloat(pe.value)||0;
+  const te=document.getElementById('f_total');if(te)te.value=q&&p?(q*p).toFixed(2):'';
 }
 
 // ══ STEP NAV ══
 function goStep(n){
-  if(n===2&&!selCat){toast('Select a category first','err');return;}
-  if(n===3){
+  if(n===2){
+    if(!selCat){toast('Select a category first','err');return;}
     if(!selItem){toast('Search and select an item','err');return;}
     if(!document.getElementById('f_qty').value){toast('Quantity is required','err');return;}
     buildReview();
   }
-  [1,2,3].forEach(i=>{
+  [1,2].forEach(i=>{
     document.getElementById('st'+i).style.display=i===n?'block':'none';
     const sn=document.getElementById('sn'+i),sl=document.getElementById('sl'+i);
     if(i<n){sn.className='sn done';sn.textContent='✓';sl.className='sl done';}
     else if(i===n){sn.className='sn on';sn.textContent=i;sl.className='sl on';}
     else{sn.className='sn off';sn.textContent=i;sl.className='sl off';}
-    if(i<3)document.getElementById('ln'+i).className='sline'+(i<n?' done':'');
+    if(i<2)document.getElementById('ln'+i).className='sline'+(i<n?' done':'');
   });
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function buildRow(){
-  const g=id=>document.getElementById(id).value;
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
   const qty=parseFloat(g('f_qty'))||'';
   const price=parseFloat(g('f_price'))||'';
   return{
@@ -1803,10 +1671,12 @@ function buildRow(){
 }
 
 function buildReview(){
+  const rvBox=document.getElementById('rvBox');
+  if(!rvBox)return;
   const r=buildRow();
   const s1=SH1_COLS.map(c=>[c.hdr,r[c.key]??'',c.auto]);
   const s2extra=SH2_COLS.slice(17).map(c=>[c.hdr,r[c.key]??'',false]);
-  document.getElementById('rvBox').innerHTML=`
+  rvBox.innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
       <div style="border-right:1px solid var(--b1);padding-right:16px">
         <div class="sectlabel" style="margin-bottom:10px">📋 Sheet 1 Fields (17 cols)</div>
@@ -1834,19 +1704,26 @@ function saveRow(){
   setTimeout(()=>{gotoTab('sheet');renderSheet();},500);
 }
 
+function saveRowDirect(){
+  if(!selCat){toast('Select a category first','err');return;}
+  if(!selItem){toast('Search and select an item','err');return;}
+  const qe=document.getElementById('f_qty');
+  if(!qe||!qe.value){toast('Quantity is required','err');return;}
+  saveRow();
+}
+
 function resetForm(){
   selCat=null;selItem=null;
   const fields=['f_sno','f_itemNo','f_desc','f_uom','f_whse','f_acct','f_proj',
     'f_qty','f_price','f_total','f_notes','f_ord','f_prop',
-    'f_qtywhse','f_lastprice','f_afp','f_supname','f_supvat','f_supinv','f_supdate','f_svcode'];
-  fields.forEach(id=>{if(document.getElementById(id))document.getElementById(id).value='';});
-  document.getElementById('f_clust').value='';
-  document.getElementById('f_cost').value='';
-  document.getElementById('f_dept').value='';
-  document.getElementById('f_staff').value='GEN4';
-  document.getElementById('chipRow').style.display='none';
+    'f_qtywhse','f_lastprice','f_afp','f_supname','f_supvat','f_supinv','f_supdate','f_svcode',
+    'f_clust','f_cost','f_dept'];
+  fields.forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const fs=document.getElementById('f_staff');if(fs)fs.value='GEN4';
+  const cr=document.getElementById('chipRow');if(cr)cr.style.display='none';
   document.querySelectorAll('.ctile').forEach(t=>t.classList.remove('sel'));
-  goStep(1);
+  const fhdr=document.getElementById('fhdr');if(fhdr)fhdr.innerHTML='📝 Fill Details';
+  const is=document.getElementById('iSrch');if(is)is.value='';
 }
 
 // ══ SHEET SUB-TABS ══
@@ -1962,15 +1839,18 @@ function exportSelectedSlip(){
     const masterItem=ITEMS.find(m=>m.itemNo===it.code)||null;
     return{
       sno:String(idx+1),
+      mrsDate:r.date||'',
+      mrsNo:r.no||'',
+      supname:r.contractor||'',
+      materialType:r.materialType||'',
       itemNo:it.code||'',desc:it.desc||'',uom:it.uom||'',
-      notes:`MRS #${r.no}`,qty:it.qty||'',price:'',total:'',
+      notes:'',qty:it.qty||'',price:'',total:'',
       whse:masterItem?masterItem.whse:'SHC01',ord:'',acct:'',
       proj:masterItem?masterItem.proj:'SHC-PH01',
       dept:'',prop:r.proptype||'',clust:r.cluster||'',
       cost:r.costcode||'',staff:r.staff||'',
       qtywhse:'',lastprice:'',afp:'',
-      supname:r.contractor||'',supvat:'',supinv:'',supdate:r.date||'',svcode:'',
-      mrsNo:r.no,mrsDate:r.date
+      supvat:'',supinv:'',supdate:r.date||'',svcode:'',
     };
   });
   if(!rows.length){toast('No items in this slip','err');return;}
@@ -2135,10 +2015,27 @@ function getMRSRows(){
   return rows;
 }
 
+
+let _mrsType='';
+function pickMRSType(t){
+  _mrsType=t;
+  document.getElementById('mrs_type').value=t;
+  ['rentable','chargeable','free'].forEach(k=>{
+    const btn=document.getElementById('mtype-'+k);
+    if(!btn)return;
+    const active=k===t.toLowerCase();
+    btn.style.borderColor=active?'var(--acc)':'var(--b1)';
+    btn.style.background=active?'rgba(68,147,248,.12)':'var(--s2)';
+    btn.style.color=active?'var(--acc2)':'var(--sub)';
+  });
+}
+
 function saveMRS(){
   const no=(document.getElementById('mrs_no')?.value||'').trim();
   const date=(document.getElementById('mrs_date')?.value||'').trim();
   const contractor=(document.getElementById('mrs_contractor')?.value||'').trim();
+  if(!_mrsFormCat){toast('Select a material category first','err');return;}
+  if(!_mrsType){toast('Select a material type (Rentable/Chargeable/Free)','err');return;}
   if(!no){toast('SEQ No. is required','err');return;}
   if(!date){toast('Date is required','err');return;}
   if(!contractor){toast('Contractor Name is required','err');return;}
@@ -2148,6 +2045,8 @@ function saveMRS(){
     id:Date.now(),
     no,date,
     contractor,
+    category:_mrsFormCat||'',
+    materialType:_mrsType||'',
     cluster:(document.getElementById('mrs_cluster')?.value||''),
     proptype:(document.getElementById('mrs_proptype')?.value||''),
     costcode:(document.getElementById('mrs_costcode')?.value||''),
@@ -2166,7 +2065,7 @@ function saveMRS(){
       itemNo:it.code||'',
       desc:it.desc||'',
       uom:it.uom||'',
-      notes:`MRS #${no}`,
+      notes:'',  // Item Details left blank per requirements
       qty:it.qty||'',
       price:'',
       total:'',
@@ -2183,7 +2082,8 @@ function saveMRS(){
       qtywhse:'',lastprice:'',afp:'',
       supname:record.contractor||'',supvat:'',supinv:'',supdate:record.date||'',svcode:'',
       savedAt:record.savedAt,
-      mrsNo:no,mrsDate:date
+      mrsNo:no,mrsDate:date,
+      materialType:record.materialType||''
     };
   });
   mrsSheetRows.forEach(r=>{sheet1.push(r);sheet2.push(r);});
@@ -2196,6 +2096,12 @@ function saveMRS(){
 }
 
 function clearMRSForm(){
+  _mrsType='';
+  document.getElementById('mrs_type').value='';
+  ['rentable','chargeable','free'].forEach(k=>{const b=document.getElementById('mtype-'+k);if(b){b.style.borderColor='var(--b1)';b.style.background='var(--s2)';b.style.color='var(--sub)';};});
+  _mrsFormCat=null;
+  document.querySelectorAll('#mrsFormCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
+  const badge=document.getElementById('mrsCatBadge');if(badge)badge.innerHTML='';
   ['mrs_no','mrs_date'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
@@ -2211,16 +2117,61 @@ function clearMRSForm(){
 }
 
 
+let _mrsCatFilter='';
+function buildMRSFormCatGrid(){
+  const grid=document.getElementById('mrsFormCatGrid');
+  if(!grid)return;
+  grid.innerHTML=CATS.map(c=>
+    `<div class="ctile" id="mrsfc-${c.p}" onclick="pickMRSFormCat('${c.p}')">
+      <div class="cti">${c.i}</div><div class="ctn">${c.n}</div>
+      <div class="ctc">${c.p}-XXXXXX</div>
+      <div class="ctx">${c.c}+ items</div>
+    </div>`).join('');
+}
+
+let _mrsFormCat=null;
+function pickMRSFormCat(p){
+  _mrsFormCat=p;
+  document.querySelectorAll('#mrsFormCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
+  const el=document.getElementById('mrsfc-'+p);
+  if(el)el.classList.add('sel');
+  const cat=CATS.find(c=>c.p===p);
+  const badge=document.getElementById('mrsCatBadge');
+  if(badge&&cat) badge.innerHTML=` &nbsp;<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 10px;border-radius:12px;font-weight:600">${cat.i} ${cat.n}</span>`;
+}
+
+function buildMRSCatGrid(){
+  const grid=document.getElementById('mrsCatGrid');
+  if(!grid)return;
+  grid.innerHTML=CATS.map(c=>
+    `<div class="ctile" id="mrsct-${c.p}" onclick="pickMRSCat('${c.p}')">
+      <div class="cti">${c.i}</div><div class="ctn">${c.n}</div>
+      <div class="ctc">${c.p}-XXXXXX</div>
+      <div class="ctx">${c.c}+ items</div>
+    </div>`).join('');
+}
+function pickMRSCat(p){
+  _mrsCatFilter=(_mrsCatFilter===p)?'':p;
+  document.querySelectorAll('#mrsCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
+  if(_mrsCatFilter){
+    const el=document.getElementById('mrsct-'+_mrsCatFilter);
+    if(el)el.classList.add('sel');
+  }
+  const clearBtn=document.getElementById('mrsCatClear');
+  if(clearBtn)clearBtn.style.display=_mrsCatFilter?'inline-flex':'none';
+  renderMRSList();
+}
+function clearMRSCatFilter(){
+  _mrsCatFilter='';
+  document.querySelectorAll('#mrsCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
+  const clearBtn=document.getElementById('mrsCatClear');
+  if(clearBtn)clearBtn.style.display='none';
+  renderMRSList();
+}
 function renderMRSList(){
-  const q=(document.getElementById('mrsSearch')?.value||'').toLowerCase();
-  const from=document.getElementById('mrsDateFrom')?.value||'';
-  const to=document.getElementById('mrsDateTo')?.value||'';
   const filtered=mrsList.filter(r=>{
-    const mq=!q||r.no.includes(q)||r.contractor.toLowerCase().includes(q)||
-      r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
-    const mf=!from||r.date>=from;
-    const mt=!to||r.date<=to;
-    return mq&&mf&&mt;
+    if(!_mrsCatFilter)return true;
+    return r.rows.some(row=>(row.code||'').startsWith(_mrsCatFilter));
   });
   document.getElementById('mrsCnt').textContent=filtered.length+' slips';
   const listEl=document.getElementById('mrsList');
@@ -2237,6 +2188,7 @@ function renderMRSList(){
       <div class="mrs-list-meta">
         <div class="mrs-list-loc">${r.contractor||'—'} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.cluster||''}</span></div>
         <div class="mrs-list-items">${itemSummary||'No items described'}</div>
+        ${r.materialType?`<div style="font-size:10px;margin-top:2px"><span style="background:rgba(68,147,248,.1);color:var(--acc2);padding:1px 7px;border-radius:8px;font-weight:600;font-size:9px">${r.materialType}</span></div>`:''}
       </div>
       <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px">
         <div class="mrs-list-date">${d}</div>
@@ -2282,10 +2234,14 @@ function exportFilteredMRSToSheets(){
       const masterItem=ITEMS.find(m=>m.itemNo===it.code)||null;
       rows.push({
         sno:String(rows.length+1),
+        mrsDate:r.date||'',
+        mrsNo:r.no||'',
+        supname:r.contractor||'',
+        materialType:r.materialType||'',
         itemNo:it.code||'',
         desc:it.desc||'',
         uom:it.uom||'',
-        notes:`MRS #${r.no}`,
+        notes:'',
         qty:it.qty||'',
         price:'',
         total:'',
@@ -2299,8 +2255,7 @@ function exportFilteredMRSToSheets(){
         cost:r.costcode||'',
         staff:r.staff||'',
         qtywhse:'',lastprice:'',afp:'',
-        supname:r.contractor||'',supvat:'',supinv:'',supdate:r.date||'',svcode:'',
-        mrsNo:r.no,mrsDate:r.date
+        supvat:'',supinv:'',supdate:r.date||'',svcode:'',
       });
     });
   });
