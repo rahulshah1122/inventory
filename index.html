@@ -332,13 +332,7 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
   <!-- NEW MRS -->
   <div id="mrs-new">
     <div class="card">
-      <div class="chdr">📋 MRS — Requisition Slip<span id="mrsCatBadge"></span></div>
-
-      <!-- Category selector -->
-      <div style="margin-bottom:16px">
-        <div class="sectlabel">📁 Material Category <span style="color:var(--red)">*</span></div>
-        <div class="cgrid" id="mrsFormCatGrid"></div>
-      </div>
+      <div class="chdr">📋 MRS — Requisition Slip</div>
 
       <!-- Header info matching the sketch -->
       <div class="fg2" style="margin-bottom:13px">
@@ -1233,7 +1227,6 @@ window.addEventListener('DOMContentLoaded',()=>{
   try{mrsList=JSON.parse(localStorage.getItem('shc_mrs')||'[]')}catch(e){mrsList=[]}
   buildCats();buildClusters();buildCosts();buildStaff();buildContractors();
   buildMRSCluster();buildMRSCostCode();buildMRSStaff();
-  buildMRSFormCatGrid();
   buildMRSItems();
   setDefaultDate();
   updateStat();
@@ -2034,7 +2027,6 @@ function saveMRS(){
   const no=(document.getElementById('mrs_no')?.value||'').trim();
   const date=(document.getElementById('mrs_date')?.value||'').trim();
   const contractor=(document.getElementById('mrs_contractor')?.value||'').trim();
-  if(!_mrsFormCat){toast('Select a material category first','err');return;}
   if(!_mrsType){toast('Select a material type (Rentable/Chargeable/Free)','err');return;}
   if(!no){toast('SEQ No. is required','err');return;}
   if(!date){toast('Date is required','err');return;}
@@ -2045,7 +2037,6 @@ function saveMRS(){
     id:Date.now(),
     no,date,
     contractor,
-    category:_mrsFormCat||'',
     materialType:_mrsType||'',
     cluster:(document.getElementById('mrs_cluster')?.value||''),
     proptype:(document.getElementById('mrs_proptype')?.value||''),
@@ -2099,9 +2090,6 @@ function clearMRSForm(){
   _mrsType='';
   document.getElementById('mrs_type').value='';
   ['rentable','chargeable','free'].forEach(k=>{const b=document.getElementById('mtype-'+k);if(b){b.style.borderColor='var(--b1)';b.style.background='var(--s2)';b.style.color='var(--sub)';};});
-  _mrsFormCat=null;
-  document.querySelectorAll('#mrsFormCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
-  const badge=document.getElementById('mrsCatBadge');if(badge)badge.innerHTML='';
   ['mrs_no','mrs_date'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
@@ -2118,28 +2106,6 @@ function clearMRSForm(){
 
 
 let _mrsCatFilter='';
-function buildMRSFormCatGrid(){
-  const grid=document.getElementById('mrsFormCatGrid');
-  if(!grid)return;
-  grid.innerHTML=CATS.map(c=>
-    `<div class="ctile" id="mrsfc-${c.p}" onclick="pickMRSFormCat('${c.p}')">
-      <div class="cti">${c.i}</div><div class="ctn">${c.n}</div>
-      <div class="ctc">${c.p}-XXXXXX</div>
-      <div class="ctx">${c.c}+ items</div>
-    </div>`).join('');
-}
-
-let _mrsFormCat=null;
-function pickMRSFormCat(p){
-  _mrsFormCat=p;
-  document.querySelectorAll('#mrsFormCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
-  const el=document.getElementById('mrsfc-'+p);
-  if(el)el.classList.add('sel');
-  const cat=CATS.find(c=>c.p===p);
-  const badge=document.getElementById('mrsCatBadge');
-  if(badge&&cat) badge.innerHTML=` &nbsp;<span style="background:rgba(68,147,248,.12);color:var(--acc2);font-size:10px;padding:2px 10px;border-radius:12px;font-weight:600">${cat.i} ${cat.n}</span>`;
-}
-
 function buildMRSCatGrid(){
   const grid=document.getElementById('mrsCatGrid');
   if(!grid)return;
