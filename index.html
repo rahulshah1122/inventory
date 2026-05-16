@@ -372,6 +372,23 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
         <input type="hidden" id="mrs_type" value="">
       </div>
 
+      <div class="fg" style="margin-bottom:13px">
+        <div class="fl">Department</div>
+        <select id="mrs_dept">
+          <option value="">-- Select Department --</option>
+          <option>ADMN&amp;GEN</option>
+          <option>CIVIL</option>
+          <option>FINANCE</option>
+          <option>HAVC</option>
+          <option>HR</option>
+          <option>MEP</option>
+          <option>PROCUR</option>
+          <option>QC</option>
+          <option>QS</option>
+          <option>STCONIN</option>
+        </select>
+      </div>
+
       <div class="fg2" style="margin-bottom:13px">
         <div class="fg">
           <div class="fl">Cluster <span class="r">*</span></div>
@@ -1840,7 +1857,7 @@ function exportSelectedSlip(){
       notes:'',qty:it.qty||'',price:'',total:'',
       whse:masterItem?masterItem.whse:'SHC01',ord:'',acct:'',
       proj:masterItem?masterItem.proj:'SHC-PH01',
-      dept:'',prop:r.proptype||'',clust:r.cluster||'',
+      dept:r.dept||'',prop:r.proptype||'',clust:r.cluster||'',
       cost:r.costcode||'',staff:r.staff||'',
       qtywhse:'',lastprice:'',afp:'',
       supvat:'',supinv:'',supdate:r.date||'',svcode:'',
@@ -2040,6 +2057,7 @@ function saveMRS(){
     materialType:_mrsType||'',
     cluster:(document.getElementById('mrs_cluster')?.value||''),
     proptype:(document.getElementById('mrs_proptype')?.value||''),
+    dept:(document.getElementById('mrs_dept')?.value||''),
     costcode:(document.getElementById('mrs_costcode')?.value||''),
     staff:(document.getElementById('mrs_staff')?.value||''),
     rows,
@@ -2064,7 +2082,7 @@ function saveMRS(){
       ord:'',
       acct:'',
       proj:masterItem?masterItem.proj:'SHC-PH01',
-      dept:'',
+      dept:record.dept||'',
       prop:record.proptype||'',
       clust:record.cluster||'',
       cost:record.costcode||'',
@@ -2095,6 +2113,7 @@ function clearMRSForm(){
   });
   document.getElementById('mrs_contractor').value='';
   document.getElementById('contractor_info').style.display='none';
+  const mDept=document.getElementById('mrs_dept');if(mDept)mDept.value='';
   document.getElementById('mrs_cluster').value='';
   document.getElementById('mrs_proptype').value='';
   document.getElementById('mrs_costcode').value='';
@@ -2215,7 +2234,7 @@ function exportFilteredMRSToSheets(){
         ord:'',
         acct:'',
         proj:masterItem?masterItem.proj:'SHC-PH01',
-        dept:'',
+        dept:r.dept||'',
         prop:r.proptype||'',
         clust:r.cluster||'',
         cost:r.costcode||'',
