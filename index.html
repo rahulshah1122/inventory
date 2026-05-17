@@ -243,12 +243,22 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
     <!-- Filter bar -->
     <div class="sa" style="flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <div class="sf" style="flex-wrap:wrap;gap:8px;align-items:center">
-        <input style="width:210px" type="text" id="slipSrch" placeholder="🔍 Search slip / contractor…" oninput="renderSlipList()">
+        <input style="width:190px" type="text" id="slipSrch" placeholder="🔍 Search slip / contractor…" oninput="renderSlipList()">
+        <select style="width:130px" id="slipCat" onchange="renderSlipList()">
+          <option value="">All Categories</option>
+          <option value="CIV">🧱 Civil</option>
+          <option value="GEN">📦 General</option>
+          <option value="MEP">⚡ MEP</option>
+          <option value="HVA">❄️ HVAC</option>
+          <option value="TOO">🔧 Tools</option>
+          <option value="MEC">⚙️ Mech</option>
+          <option value="SER">🛎 Services</option>
+        </select>
         <span style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Date:</span>
-        <input type="date" id="slipFrom" style="width:136px" onchange="renderSlipList()" title="From">
+        <input type="date" id="slipFrom" style="width:132px" onchange="renderSlipList()" title="From">
         <span style="color:var(--sub);font-size:12px">→</span>
-        <input type="date" id="slipTo"   style="width:136px" onchange="renderSlipList()" title="To">
-        <button class="btn bg bsm" onclick="document.getElementById('slipFrom').value='';document.getElementById('slipTo').value='';renderSlipList()">✕</button>
+        <input type="date" id="slipTo"   style="width:132px" onchange="renderSlipList()" title="To">
+        <button class="btn bg bsm" onclick="clearSlipFilters()">✕</button>
         <span class="cb" id="slipCnt">0 slips</span>
       </div>
       <button class="btn be bsm" id="exportSelBtn" onclick="exportSelectedSlip()" style="display:none">⬇ Export Selected — Both Sheets</button>
@@ -286,18 +296,23 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
       <div class="stab"    id="stab2" onclick="switchSheet(2)">📋 Sheet 2 — MEP Inventory (25 cols)</div>
     </div>
     <div class="sa">
-      <div class="sf">
-        <input style="width:230px" type="text" id="shSrch" placeholder="🔍 Search all columns…" oninput="renderSheet()">
-        <select style="width:148px" id="shCat" onchange="renderSheet()">
+      <div class="sf" style="flex-wrap:wrap;gap:7px;align-items:center">
+        <input style="width:200px" type="text" id="shSrch" placeholder="🔍 Search all columns…" oninput="renderSheet()">
+        <select style="width:130px" id="shCat" onchange="renderSheet()">
           <option value="">All Categories</option>
-          <option value="CIV">CIV — Civil</option>
-          <option value="GEN">GEN — General</option>
-          <option value="MEP">MEP — MEP</option>
-          <option value="HVA">HVA — HVAC</option>
-          <option value="TOO">TOO — Tools</option>
-          <option value="MEC">MEC — Mech</option>
-          <option value="SER">SER — Services</option>
+          <option value="CIV">🧱 CIV — Civil</option>
+          <option value="GEN">📦 GEN — General</option>
+          <option value="MEP">⚡ MEP — MEP</option>
+          <option value="HVA">❄️ HVA — HVAC</option>
+          <option value="TOO">🔧 TOO — Tools</option>
+          <option value="MEC">⚙️ MEC — Mech</option>
+          <option value="SER">🛎 SER — Services</option>
         </select>
+        <span style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Date:</span>
+        <input type="date" id="shFrom" style="width:132px" onchange="renderSheet()" title="From">
+        <span style="color:var(--sub);font-size:12px">→</span>
+        <input type="date" id="shTo"   style="width:132px" onchange="renderSheet()" title="To">
+        <button class="btn bg bsm" onclick="clearSheetFilters()">✕</button>
         <span class="cb" id="rowCnt">0 rows</span>
       </div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
@@ -457,14 +472,25 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
 
   <!-- MRS LIST -->
   <div id="mrs-list" style="display:none">
-    <div class="card" style="margin-bottom:14px">
-      <div class="chdr">📁 Filter by Category</div>
-      <div class="cgrid" id="mrsCatGrid"></div>
-    </div>
-    <div class="sa" style="flex-wrap:wrap;gap:10px;margin-bottom:10px">
-      <div style="display:flex;gap:7px;align-items:center">
+    <div class="sa" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center">
+      <div class="sf" style="flex-wrap:wrap;gap:7px;align-items:center">
+        <input style="width:190px" type="text" id="mrsSearch" placeholder="🔍 Search MRS / contractor…" oninput="renderMRSList()">
+        <select style="width:130px" id="mrsCatSel" onchange="renderMRSList()">
+          <option value="">All Categories</option>
+          <option value="CIV">🧱 Civil</option>
+          <option value="GEN">📦 General</option>
+          <option value="MEP">⚡ MEP</option>
+          <option value="HVA">❄️ HVAC</option>
+          <option value="TOO">🔧 Tools</option>
+          <option value="MEC">⚙️ Mech</option>
+          <option value="SER">🛎 Services</option>
+        </select>
+        <span style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Date:</span>
+        <input type="date" id="mrsDateFrom" style="width:132px" onchange="renderMRSList()" title="From">
+        <span style="color:var(--sub);font-size:12px">→</span>
+        <input type="date" id="mrsDateTo" style="width:132px" onchange="renderMRSList()" title="To">
+        <button class="btn bg bsm" onclick="clearMRSFilters()">✕</button>
         <span class="cb" id="mrsCnt">0 slips</span>
-        <button class="btn bg bsm" id="mrsCatClear" style="display:none" onclick="clearMRSCatFilter()">✕ Clear filter</button>
       </div>
       <div style="display:flex;gap:7px">
         <button class="btn bg bsm" onclick="switchMRS('new')">➕ New MRS</button>
@@ -1754,12 +1780,14 @@ function renderSlipList(){
   const q=(document.getElementById('slipSrch')?.value||'').toLowerCase();
   const from=document.getElementById('slipFrom')?.value||'';
   const to=document.getElementById('slipTo')?.value||'';
+  const cat=document.getElementById('slipCat')?.value||'';
   const filtered=mrsList.filter(r=>{
     const mq=!q||String(r.no).includes(q)||r.contractor.toLowerCase().includes(q)||
       r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
     const mf=!from||r.date>=from;
     const mt=!to||r.date<=to;
-    return mq&&mf&&mt;
+    const mc=!cat||r.rows.some(row=>(row.code||'').startsWith(cat));
+    return mq&&mf&&mt&&mc;
   });
   document.getElementById('slipCnt').textContent=filtered.length+' slips';
   const listEl=document.getElementById('slipList');
@@ -1897,10 +1925,14 @@ function renderSheet(){
   const data=activeSheet===1?sheet1:sheet2;
   const q=(document.getElementById('shSrch')?.value||'').toLowerCase();
   const cat=document.getElementById('shCat')?.value||'';
+  const from=document.getElementById('shFrom')?.value||'';
+  const to=document.getElementById('shTo')?.value||'';
   let rows=data.filter(r=>{
     const mc=!cat||(r.itemNo||'').startsWith(cat);
     const mq=!q||Object.values(r).some(v=>String(v).toLowerCase().includes(q));
-    return mc&&mq;
+    const mf=!from||(r.mrsDate||r.savedAt||'')>=from;
+    const mt=!to||(r.mrsDate||r.savedAt||'')<=to;
+    return mc&&mq&&mf&&mt;
   });
   if(sortCol){
     rows=[...rows].sort((a,b)=>{
@@ -2124,39 +2156,33 @@ function clearMRSForm(){
 }
 
 
-let _mrsCatFilter='';
-function buildMRSCatGrid(){
-  const grid=document.getElementById('mrsCatGrid');
-  if(!grid)return;
-  grid.innerHTML=CATS.map(c=>
-    `<div class="ctile" id="mrsct-${c.p}" onclick="pickMRSCat('${c.p}')">
-      <div class="cti">${c.i}</div><div class="ctn">${c.n}</div>
-      <div class="ctc">${c.p}-XXXXXX</div>
-      <div class="ctx">${c.c}+ items</div>
-    </div>`).join('');
+function clearSlipFilters(){
+  ['slipSrch','slipFrom','slipTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('slipCat').value='';
+  renderSlipList();
 }
-function pickMRSCat(p){
-  _mrsCatFilter=(_mrsCatFilter===p)?'':p;
-  document.querySelectorAll('#mrsCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
-  if(_mrsCatFilter){
-    const el=document.getElementById('mrsct-'+_mrsCatFilter);
-    if(el)el.classList.add('sel');
-  }
-  const clearBtn=document.getElementById('mrsCatClear');
-  if(clearBtn)clearBtn.style.display=_mrsCatFilter?'inline-flex':'none';
+function clearMRSFilters(){
+  ['mrsSearch','mrsDateFrom','mrsDateTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('mrsCatSel').value='';
   renderMRSList();
 }
-function clearMRSCatFilter(){
-  _mrsCatFilter='';
-  document.querySelectorAll('#mrsCatGrid .ctile').forEach(t=>t.classList.remove('sel'));
-  const clearBtn=document.getElementById('mrsCatClear');
-  if(clearBtn)clearBtn.style.display='none';
-  renderMRSList();
+function clearSheetFilters(){
+  ['shSrch','shFrom','shTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('shCat').value='';
+  renderSheet();
 }
 function renderMRSList(){
+  const q=(document.getElementById('mrsSearch')?.value||'').toLowerCase();
+  const cat=document.getElementById('mrsCatSel')?.value||'';
+  const from=document.getElementById('mrsDateFrom')?.value||'';
+  const to=document.getElementById('mrsDateTo')?.value||'';
   const filtered=mrsList.filter(r=>{
-    if(!_mrsCatFilter)return true;
-    return r.rows.some(row=>(row.code||'').startsWith(_mrsCatFilter));
+    const mq=!q||String(r.no).includes(q)||r.contractor.toLowerCase().includes(q)||
+      r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
+    const mc=!cat||r.rows.some(row=>(row.code||'').startsWith(cat));
+    const mf=!from||r.date>=from;
+    const mt=!to||r.date<=to;
+    return mq&&mc&&mf&&mt;
   });
   document.getElementById('mrsCnt').textContent=filtered.length+' slips';
   const listEl=document.getElementById('mrsList');
