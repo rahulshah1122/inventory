@@ -1525,8 +1525,7 @@ function renderSlipList(){
       r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
     const mf=!from||r.date>=from;
     const mt=!to||r.date<=to;
-    const mc=!cat||r.rows.some(row=>(row.code||'').startsWith(cat));
-    return mq&&mf&&mt&&mc;
+    const mc=!cat||(r.category===cat)||((!r.category)&&r.rows.some(row=>(row.code||'').toUpperCase().startsWith(cat)));
   });
   document.getElementById('slipCnt').textContent=filtered.length+' slips';
   const listEl=document.getElementById('slipList');
@@ -1667,7 +1666,7 @@ function renderSheet(){
   const from=document.getElementById('shFrom')?.value||'';
   const to=document.getElementById('shTo')?.value||'';
   let rows=data.filter(r=>{
-    const mc=!cat||(r.itemNo||'').startsWith(cat);
+    const mc=!cat||(r.itemNo||'').toUpperCase().startsWith(cat);
     const mq=!q||Object.values(r).some(v=>String(v).toLowerCase().includes(q));
     const mf=!from||(r.mrsDate||r.savedAt||'')>=from;
     const mt=!to||(r.mrsDate||r.savedAt||'')<=to;
@@ -1825,6 +1824,7 @@ function saveMRS(){
     id:Date.now(),
     no,date,
     contractor,
+    category:mrsSelCat?mrsSelCat.p:'',
     materialType:_mrsType||'',
     cluster:(document.getElementById('mrs_cluster')?.value||''),
     proptype:(document.getElementById('mrs_proptype')?.value||''),
@@ -1880,6 +1880,7 @@ function saveMRS(){
 }
 
 function clearMRSForm(){
+  mrsSelCat=null;
   _mrsType='';
   document.getElementById('mrs_type').value='';
   ['rentable','chargeable','free'].forEach(k=>{const b=document.getElementById('mtype-'+k);if(b){b.style.borderColor='var(--b1)';b.style.background='var(--s2)';b.style.color='var(--sub)';};});
@@ -1922,7 +1923,7 @@ function renderMRSList(){
   const filtered=mrsList.filter(r=>{
     const mq=!q||String(r.no).includes(q)||r.contractor.toLowerCase().includes(q)||
       r.date.includes(q)||(r.cluster||'').toLowerCase().includes(q);
-    const mc=!cat||r.rows.some(row=>(row.code||'').startsWith(cat));
+    const mc=!cat||(r.category===cat)||((!r.category)&&r.rows.some(row=>(row.code||'').toUpperCase().startsWith(cat)));
     const mf=!from||r.date>=from;
     const mt=!to||r.date<=to;
     return mq&&mc&&mf&&mt;
