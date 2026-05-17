@@ -434,8 +434,8 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
           </div>
           <div id="mrs_staff_info" style="margin-top:5px;padding:5px 9px;background:rgba(63,185,80,.05);border:1px solid rgba(63,185,80,.14);border-radius:4px;font-size:10px;display:none;gap:10px;align-items:center;flex-wrap:wrap">
             <span style="font-family:var(--mo);color:var(--grn);font-weight:700" id="mrs_staff_code"></span>
-            <span style="color:var(--sub)" id="mrs_staff_rule">Dist. Rule: —</span>
-            <span style="color:var(--sub)" id="mrs_staff_fathercc"></span>
+            <span style="color:var(--sub)" id="mrs_staff_rule"></span>
+            <span style="display:none" id="mrs_staff_fathercc"></span>
           </div>
         </div>
       </div>
@@ -1239,7 +1239,7 @@ const SH1_COLS=[
   {key:'prop',         hdr:'Property Type',      auto:false,w:14},
   {key:'clust',        hdr:'Cluster / Units',    auto:false,w:16},
   {key:'cost',         hdr:'Cost Code',          auto:false,w:10},
-  {key:'staff',        hdr:'Staff Name / Assets',auto:false,w:32},
+  {key:'staff',        hdr:'Distribution Rule',  auto:false,w:20},
 ];
 
 const SH2_COLS=[...SH1_COLS,
@@ -1443,24 +1443,27 @@ function pickStaff(idx){
   const dd=document.getElementById('staffDd');
   if(!dd._hits) return;
   const s=dd._hits[idx];
-  document.getElementById('mrs_staff').value=s.name;
+  document.getElementById('mrs_staff').value=s.distRule;
   showStaffInfo(s);
   closeStaffDd();
 }
 function showStaffInfo(s){
   const box=document.getElementById('mrs_staff_info');
   document.getElementById('mrs_staff_code').textContent=s.distRule;
-  document.getElementById('mrs_staff_rule').textContent='Dist. Rule: '+s.distRule;
+  document.getElementById('mrs_staff_rule').textContent=s.name;
   const fc=document.getElementById('mrs_staff_fathercc');
-  fc.textContent=s.fatherCC?'Father CC: '+s.fatherCC:'';
+  fc.textContent='';
   box.style.display='flex';
 }
 function closeStaffDd(){
   const dd=document.getElementById('staffDd');
   dd.style.display='none';
   const val=document.getElementById('mrs_staff').value.trim();
-  const match=STAFF.find(s=>s.name.toLowerCase()===val.toLowerCase()||s.distRule.toLowerCase()===val.toLowerCase());
-  if(match) showStaffInfo(match);
+  const match=STAFF.find(s=>s.distRule.toLowerCase()===val.toLowerCase()||s.name.toLowerCase()===val.toLowerCase());
+  if(match){
+    document.getElementById('mrs_staff').value=match.distRule;
+    showStaffInfo(match);
+  }
 }
 
 // ── STAFF INFO (main inventory form) ──
@@ -1808,7 +1811,7 @@ function renderSlipList(){
       <div class="mrs-list-meta">
         <div class="mrs-list-loc" style="font-weight:600">${r.contractor||'—'} &nbsp;<span style="color:var(--sub);font-size:10px;font-weight:400">${r.cluster||''}</span></div>
         <div class="mrs-list-items">${itemSummary||'No items'}</div>
-        <div style="font-size:10px;color:var(--sub);margin-top:2px">${r.costcode?'Cost: '+r.costcode:''} ${r.staff?'· '+r.staff:''}</div>
+        <div style="font-size:10px;color:var(--sub);margin-top:2px">${r.costcode?'Cost: '+r.costcode:''} ${r.staff?'· Dist: '+r.staff:''}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <div class="mrs-list-date">${d}</div>
@@ -1836,7 +1839,7 @@ function selectSlip(oi){
   const rows=r.rows.filter(x=>x.code||x.desc);
   document.getElementById('slipDetailBody').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:14px">
-      ${[['Cluster',r.cluster],['Property Type',r.proptype],['Cost Code',r.costcode],['Staff',r.staff]].filter(([,v])=>v).map(([l,v])=>`
+      ${[['Cluster',r.cluster],['Property Type',r.proptype],['Cost Code',r.costcode],['Dist. Rule',r.staff]].filter(([,v])=>v).map(([l,v])=>`
         <div style="background:var(--s2);border-radius:4px;padding:8px 12px">
           <div style="font-size:9px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${l}</div>
           <div style="font-size:12px;font-weight:600">${v}</div>
@@ -2091,7 +2094,11 @@ function saveMRS(){
     proptype:(document.getElementById('mrs_proptype')?.value||''),
     dept:(document.getElementById('mrs_dept')?.value||''),
     costcode:(document.getElementById('mrs_costcode')?.value||''),
-    staff:(document.getElementById('mrs_staff')?.value||''),
+    staff:(()=>{
+      const val=(document.getElementById('mrs_staff')?.value||'').trim();
+      const match=STAFF.find(s=>s.distRule.toLowerCase()===val.toLowerCase()||s.name.toLowerCase()===val.toLowerCase());
+      return match?match.distRule:val;
+    })(),
     rows,
     savedAt:new Date().toISOString()
   };
