@@ -17,5 +17,11 @@
   "bugs": {
     "url": "https://github.com/rahulshah1122/inventory/issues"
   },
-  "homepage": "https://github.com/rahulshah1122/inventory#readme"
+  "homepage": "https://github.com/rahulshah1122/inventory#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/filesystem": "^8.1.2"
+  }
 }
