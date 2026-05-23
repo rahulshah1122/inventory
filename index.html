@@ -352,7 +352,7 @@ td.ic .cv{color:var(--acc);font-family:var(--mo);font-weight:600}
       <!-- Header info matching the sketch -->
       <div class="fg2" style="margin-bottom:13px">
         <div class="fg">
-          <div class="fl">SEQ NO. <span class="r">*</span></div>
+          <div class="fl">SMR NO. <span class="r">*</span></div>
           <input id="mrs_no" placeholder="e.g. 12078" type="number">
         </div>
         <div class="fg">
@@ -957,7 +957,7 @@ const CATS=[
 const SH1_COLS=[
   {key:'sno',          hdr:'S.NO',               auto:true, w:7},
   {key:'mrsDate',      hdr:'Date',               auto:false,w:14},
-  {key:'mrsNo',        hdr:'SEQ NO',             auto:false,w:12},
+  {key:'mrsNo',        hdr:'SMR NO',             auto:false,w:12},
   {key:'supname',      hdr:'Contractor Name',    auto:false,w:32},
   {key:'materialType', hdr:'Material Type',      auto:false,w:14},
   {key:'itemNo',       hdr:'Item No.',           auto:true, w:16,isItem:true},
@@ -1646,7 +1646,9 @@ function exportSelectedSlip(){
   XLSX.utils.book_append_sheet(wb,ws2,'Sheet2 — MEP Inventory');
 
   const dateTag=from||to?`_${from||''}${to?'_to_'+to:''}`:'';
-  XLSX.writeFile(wb,`MRS_${r.no}_${r.date}${dateTag}.xlsx`);
+  const dateStr=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const uniqueNum=Date.now();
+  XLSX.writeFile(wb,`SHC_MRS_${r.no}_${dateStr}_${uniqueNum}.xlsx`);
   toast(`📥 MRS #${r.no} exported — ${rows.length} rows, both sheets!`);
 }
 
@@ -1760,7 +1762,9 @@ function exportSheet(){
   const ws2=XLSX.utils.aoa_to_sheet([h2,...d2]);
   ws2['!cols']=SH2_COLS.map(c=>({wch:c.w}));
   XLSX.utils.book_append_sheet(wb,ws2,'Sheet1');
-  XLSX.writeFile(wb,`SHC-PH01_Inventory_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const dateStr=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const uniqueNum=Date.now();
+  XLSX.writeFile(wb,`SHC_Inventory_${dateStr}_${uniqueNum}.xlsx`);
   toast('📥 Excel exported — 2 sheets!');
 }
 
@@ -1815,7 +1819,7 @@ function saveMRS(){
   const date=(document.getElementById('mrs_date')?.value||'').trim();
   const contractor=(document.getElementById('mrs_contractor')?.value||'').trim();
   if(!_mrsType){toast('Select a material type (Rentable/Chargeable/Free)','err');return;}
-  if(!no){toast('SEQ No. is required','err');return;}
+  if(!no){toast('SMR NO. is required','err');return;}
   if(!date){toast('Date is required','err');return;}
   if(!contractor){toast('Contractor Name is required','err');return;}
   const rows=getMRSRows();
@@ -2032,7 +2036,9 @@ function exportFilteredMRSToSheets(){
   XLSX.utils.book_append_sheet(wb,ws2,'Sheet2 — MEP Inventory');
 
   const dateTag=(from||to)?`_${from||''}${to?'_to_'+to:''}`:'_All';
-  XLSX.writeFile(wb,`SHC-PH01_MRS_Sheets${dateTag}.xlsx`);
+  const dateStr=new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const uniqueNum=Date.now();
+  XLSX.writeFile(wb,`SHC_MRS_Sheets_${dateStr}_${uniqueNum}.xlsx`);
   toast(`📥 Exported ${rows.length} rows from ${filtered.length} MRS slip(s)!`);
 }
 
